@@ -257,3 +257,68 @@ test.describe('the run bar stays in reach', () => {
     await expect(section.getByRole('group', { name: 'Run controls' })).toBeInViewport()
   })
 })
+
+test.describe('explanations (Phase 5)', () => {
+  test('the comparison explains why the extra cashier and the extra barista differ', async ({ page }) => {
+    const section = await open(page)
+    await section.getByRole('button', { name: 'Compare the three setups' }).click()
+    const panel = section.getByRole('region', { name: 'Full-run model results' })
+    // The three plain-language ideas.
+    await expect(panel).toContainText('The demand is fixed')
+    await expect(panel).toContainText('The staffing is not')
+    await expect(panel).toContainText('Only the slowest step counts')
+    // Where the waiting went: text for every setup, not only bars.
+    const waiting = panel.getByRole('figure')
+    await expect(waiting).toContainText('Where the waiting went')
+    await expect(waiting.getByRole('listitem').nth(1)).toContainText('Make drinks 145 s')
+    await expect(waiting.getByRole('listitem').nth(1)).toContainText('Order & pay 0 s')
+    await expect(waiting.getByRole('listitem').nth(2)).toContainText('Order & pay 58 s')
+    await expect(waiting.getByRole('listitem').nth(2)).toContainText('Make drinks 0 s')
+    // What happened, per setup, from the model's own numbers.
+    await expect(panel).toContainText('Waiting at the register went from 58 s to 0 s. Waiting at the drinks station went from 87 s to 145 s.')
+    await expect(panel).toContainText('Still 18 orders picked up by 10:00, the same as the original team.')
+    await expect(panel).toContainText('Order & pay is the slowest step at 2.5 orders a minute, while 3 arrive.')
+    await expect(panel).toContainText('23 orders are picked up by 10:00, 5 more than the original team.')
+  })
+
+  test('the comparison stays hidden until asked for, and the live run does not change it', async ({ page }) => {
+    const section = await open(page)
+    await expect(section.getByRole('region', { name: 'Full-run model results' })).toHaveCount(0)
+    await section.getByRole('group', { name: 'Assign extra worker' }).getByRole('radio', { name: /Pick up/ }).check({ force: true })
+    await section.getByRole('button', { name: 'Compare the three setups' }).click()
+    const panel = section.getByRole('region', { name: 'Full-run model results' })
+    await expect(panel).toContainText('23 of 30') // presets are unaffected by the custom run
+    await section.getByRole('button', { name: 'Hide the comparison' }).click()
+    await expect(panel).toHaveCount(0)
+  })
+
+  test('a finished custom run shows its own summary and is not compared with the presets', async ({ page }) => {
+    test.setTimeout(120_000)
+    await page.clock.install()
+    await page.goto('/')
+    const section = page.locator('#experiment')
+    await section.scrollIntoViewIfNeeded()
+    await section.getByRole('group', { name: 'Assign extra worker' }).getByRole('radio', { name: /Make drinks/ }).check({ force: true })
+    await section.getByRole('button', { name: 'Play' }).click()
+    // 10x speed: this setup finishes at 12:45 of simulated time, about 77 s of fake real time.
+    for (let i = 0; i < 6 && (await section.getByRole('button', { name: 'Finished' }).count()) === 0; i++) await page.clock.runFor(20_000)
+    await expect(section.getByRole('button', { name: 'Finished' })).toBeDisabled()
+    const summary = section.getByRole('region', { name: 'This run, finished' })
+    await expect(summary).toBeVisible()
+    await expect(summary).toContainText('Custom · based on Original team')
+    await expect(summary).toContainText('All 30 orders, run to the end')
+    await expect(summary).toContainText('Picked up by 10:00')
+    await expect(summary).toContainText('it is not compared with the three setups')
+    await expect(section.getByText('Complete: all 30 orders have been picked up.')).toBeVisible()
+  })
+
+  test('the ordering constraint is explained: an extra barista still leaves the register below demand', async ({ page }) => {
+    const section = await open(page)
+    await section.getByRole('radio', { name: /Extra barista/ }).check({ force: true })
+    await expect(section.getByText('Drinks can now keep up. Ordering becomes the next limit.')).toBeVisible()
+    await section.getByRole('button', { name: 'Compare the three setups' }).click()
+    const barista = section.getByRole('article').filter({ hasText: 'Extra barista' }).last()
+    await expect(barista).toContainText('2.5 falls behind')
+    await expect(barista).toContainText('4 keeps up')
+  })
+})

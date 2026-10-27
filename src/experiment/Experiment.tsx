@@ -13,6 +13,7 @@ import type { ExtraPlacement } from '@/simulation/types'
 import { ComparisonPanel } from './ComparisonPanel'
 import { Dialogs, type DialogState } from './Dialogs'
 import { FocusRail } from './FocusRail'
+import { RunSummary } from './RunSummary'
 import { PLACEMENTS, activeWorkers, capacityIfExtraAt, insightFor, mmss, placementLabel } from './helpers'
 import { useExperiment } from './useExperiment'
 import { WorkerBench } from './WorkerBench'
@@ -312,10 +313,12 @@ export function Experiment() {
             <Metric label="Active workers" value={activeWorkers(snapshot)} />
           </div>
           <p className="text-sm tabular" style={{ color: ROOM.fg2 }}>
-            Average time for completed orders so far: <strong style={{ color: ROOM.fg }}>{average === null ? 'none finished yet' : mmss(average)}</strong>. This is not
-            comparable with the full-run averages below, which cover all {ORDER_COUNT} orders.
+            Average time for orders finished so far: <strong style={{ color: ROOM.fg }}>{average === null ? 'none yet' : mmss(average)}</strong>. Not the same as the
+            full-run averages, which cover all {ORDER_COUNT} orders.
           </p>
         </div>
+
+        {complete ? <RunSummary orders={orders} label={view.label} custom={view.custom} placement={view.requested} /> : null}
 
         <div className="flex flex-wrap gap-3">
           <Button onClick={() => setShowComparison((v) => !v)} aria-expanded={showComparison} className="h-12 rounded-control px-6 text-base font-semibold">
