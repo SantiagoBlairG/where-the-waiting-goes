@@ -107,3 +107,7 @@ Open items:
 - The four Pinterest references could not be read by tooling; style, scroll, hover and movement ideas from them are not yet applied. Screenshots would fix that.
 - The client's last message was cut off after "Can you"; the request is unknown.
 - Still not checked: touch behaviour, 200% zoom, keyboard pass over the tickets, contrast numbers for every ticket combination, performance profile of the new background glow tween.
+
+## Overlap fix (2026-10-27)
+
+Client reported text overlapping on some beats (the comparison label ran into the subtitle). Cause: the stage began at a fixed 31% of the window height, but the headline plus subtitle is taller than that in shorter windows. Fixes: the stage now starts below whichever text group is showing (measured on every beat, on resize and when fonts load); headline and subtitle sizes follow the window height as well as its width; the pinned story now needs a window at least 660px tall (shorter ones get the plain layout); comparison tickets are slightly more compact. New end-to-end test `no overlapping text in the pinned story` checks, at 1440x900, 1280x720, 1100x700 and 960x680, that on every beat the stage starts below the text and stays inside the window. Run against the previous code it fails at three of the four sizes, so it detects the bug.

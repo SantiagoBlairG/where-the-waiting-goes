@@ -183,12 +183,12 @@ function StationCardBase({
           aria-labelledby={headingId}
           {...tiltHandlers}
           style={tiltStyle}
-          className={cn(surface, 'h-full gap-4 rounded-[20px] p-5 pl-7', detail === 'named' && 'justify-center')}
+          className={cn(surface, 'h-full gap-3 rounded-[20px] p-4 pl-6', detail === 'named' && 'justify-center')}
         >
           {glare}
           <span aria-hidden="true" className={cn('absolute inset-y-0 left-0 w-2', accent.bar)} />
           <div className="flex items-center gap-4">
-            <span aria-hidden="true" className={cn('display w-10 text-center text-[3.4rem] leading-none', accent.numeral)}>
+            <span aria-hidden="true" className={cn('display w-10 text-center text-[3rem] leading-none', accent.numeral)}>
               {station.step}
             </span>
             <div className="min-w-0 flex-1">

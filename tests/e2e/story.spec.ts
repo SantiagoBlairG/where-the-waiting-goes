@@ -131,3 +131,47 @@ test.describe('static story (phones, tablets, reduced motion)', () => {
     await expect(page.getByRole('heading', { name: HEADLINES[6] })).toBeAttached()
   })
 })
+
+/** The headline and the stage must never overlap, at any window size the pinned story is used at. */
+test.describe('no overlapping text in the pinned story', () => {
+  test.skip(({ isMobile }) => isMobile, 'phones get the static story')
+  const sizes = [
+    { width: 1440, height: 900 },
+    { width: 1280, height: 720 },
+    { width: 1100, height: 700 },
+    { width: 960, height: 680 },
+  ]
+  for (const size of sizes) {
+    test(`${size.width}x${size.height}`, async ({ page }) => {
+      test.setTimeout(90_000)
+      await page.setViewportSize(size)
+      await page.goto('/')
+      await page.waitForTimeout(1500)
+      const problems: string[] = []
+      for (let beat = 0; beat < HEADLINES.length; beat++) {
+        await goTo(page, beat, 0.5)
+        await settle(page, beat)
+        const m = await page.evaluate((beat) => {
+          const text = document.querySelector<HTMLElement>(`[data-text="${beat}"]`)!.getBoundingClientRect()
+          const scene = [...document.querySelectorAll<HTMLElement>('[data-scene]')].find((e) => +getComputedStyle(e).opacity > 0.9)!
+          const inner = scene.firstElementChild!.getBoundingClientRect()
+          const clock = document.querySelector<HTMLElement>('[data-clock]')?.getBoundingClientRect()
+          return {
+            textBottom: text.bottom,
+            sceneTop: inner.top,
+            sceneBottom: inner.bottom,
+            sceneRight: inner.right,
+            clockLeft: clock?.left ?? null,
+            clockBottom: clock?.bottom ?? null,
+            vw: window.innerWidth,
+            vh: window.innerHeight,
+          }
+        }, beat)
+        if (m.sceneTop < m.textBottom - 1) problems.push(`beat ${beat}: stage top ${Math.round(m.sceneTop)} is above text bottom ${Math.round(m.textBottom)}`)
+        if (m.sceneBottom > m.vh + 1) problems.push(`beat ${beat}: stage bottom ${Math.round(m.sceneBottom)} is below the window ${m.vh}`)
+        if (m.sceneRight > m.vw + 1) problems.push(`beat ${beat}: stage runs off the right edge`)
+      }
+      expect(problems, problems.join('\n')).toEqual([])
+    })
+  }
+})

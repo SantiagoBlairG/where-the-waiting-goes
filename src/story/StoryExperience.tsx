@@ -44,6 +44,14 @@ const START: Step = { beat: 0, rush: 0, stop: 0 }
 
 const BEAT_LABELS = ['A familiar moment', 'One order, three stops', 'The rush', 'The obvious fix', 'The surprise', 'The reveal', 'Your turn']
 
+/** Keeps the stage clear of the headline: it starts below whichever text group is showing. */
+function positionStage(root: HTMLElement | null, beat: number) {
+  const area = root?.querySelector<HTMLElement>('[data-stage-area]')
+  const group = root?.querySelector<HTMLElement>('[data-text="' + beat + '"]')
+  if (!area || !group) return
+  gsap.set(area, { top: group.offsetTop + group.offsetHeight + 28 })
+}
+
 const mmss = (seconds: number) => `${Math.floor(seconds / 60)}:${String(Math.round(seconds % 60)).padStart(2, '0')}`
 
 export function StoryExperience() {
@@ -101,8 +109,16 @@ export function StoryExperience() {
         onUpdate: (self) => apply(self.progress),
         onRefresh: (self) => apply(self.progress),
       })
-      document.fonts?.ready.then(() => ScrollTrigger.refresh())
-      return () => st.kill()
+      const relayout = () => positionStage(root.current, live.current.step.beat)
+      window.addEventListener('resize', relayout)
+      document.fonts?.ready.then(() => {
+        relayout()
+        ScrollTrigger.refresh()
+      })
+      return () => {
+        window.removeEventListener('resize', relayout)
+        st.kill()
+      }
     },
     { scope: root },
   )
@@ -142,6 +158,7 @@ export function StoryExperience() {
         gsap.set(group(prev), { autoAlpha: 0, delay: 0.42 })
       }
       gsap.set(group(beat), { autoAlpha: 1 })
+      positionStage(root.current, beat)
       gsap.fromTo(words(beat), { yPercent: 120 * dir }, { yPercent: 0, duration: 0.95, stagger: 0.06, ease: 'power4.out', delay: prev < 0 ? 0.15 : 0.26 })
       gsap.fromTo(support(beat), { autoAlpha: 0, y: 18 * dir }, { autoAlpha: 1, y: 0, duration: 0.8, ease: 'power3.out', delay: prev < 0 ? 0.7 : 0.8 })
 
@@ -262,7 +279,7 @@ export function StoryExperience() {
               </div>
             ) : null}
 
-            <div data-stage-area className="absolute inset-x-0 bottom-[7svh] top-[31svh]">
+            <div data-stage-area className="absolute inset-x-0 bottom-[7svh]" style={{ top: '31svh' }}>
               <Layer scene="opening" visible align="end" justify="end">
                 <OpeningCard className="w-[min(31vw,470px)] self-end" />
               </Layer>
@@ -353,7 +370,7 @@ const TextGroups = memo(function TextGroups() {
           key={b.id}
           data-text={i}
           style={{ opacity: i === 0 ? 1 : 0, visibility: i === 0 ? 'visible' : 'hidden', left: GUTTER, right: GUTTER }}
-          className="absolute top-[clamp(36px,8svh,92px)] flex flex-col items-start gap-6"
+          className="absolute top-[clamp(28px,6svh,92px)] flex flex-col items-start gap-[clamp(12px,2.4svh,24px)]"
         >
           <RevealText
             as="p"
@@ -361,12 +378,12 @@ const TextGroups = memo(function TextGroups() {
             className={cn(
               'display text-balance',
               i === 0
-                ? 'max-w-[15ch] text-[clamp(3rem,7.6vw,8.8rem)] leading-[0.92]'
-                : 'max-w-[17ch] text-[clamp(2.3rem,4.9vw,5.4rem)] leading-[0.95]',
+                ? 'max-w-[15ch] text-[clamp(2.6rem,min(7.6vw,13.5svh),8.8rem)] leading-[0.92]'
+                : 'max-w-[17ch] text-[clamp(2rem,min(4.9vw,8.4svh),5.4rem)] leading-[0.95]',
             )}
           />
           {b.support ? (
-            <p data-support className="max-w-[38ch] text-pretty text-lg leading-relaxed sm:text-xl" style={{ color: BEAT_THEMES[0].fg2 }}>
+            <p data-support className="max-w-[38ch] text-pretty text-[clamp(1rem,2.4svh,1.25rem)] leading-relaxed" style={{ color: BEAT_THEMES[0].fg2 }}>
               {b.support}
             </p>
           ) : null}

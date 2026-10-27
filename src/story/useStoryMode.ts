@@ -6,7 +6,7 @@ import { useSyncExternalStore } from 'react'
  */
 export type StoryMode = 'pinned' | 'static'
 
-const WIDE = '(min-width: 900px) and (min-height: 520px)'
+const WIDE = '(min-width: 900px) and (min-height: 660px)'
 const REDUCED = '(prefers-reduced-motion: reduce)'
 
 function subscribe(onChange: () => void) {
