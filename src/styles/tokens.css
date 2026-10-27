@@ -1,0 +1,27 @@
+/* Single source of design tokens (values from plan.md §6, documented in DESIGN.md). */
+:root {
+  --wg-page: #f7f6f2;
+  --wg-surface: #ffffff;
+  --wg-ink: #232a28;
+  --wg-ink-2: #59645f;
+  --wg-border: #dadfd9;
+  --wg-active: #176b60;
+  --wg-active-tint: #e5f0ec;
+  --wg-queue: #9a541b;
+  --wg-queue-tint: #fbedd9;
+
+  --wg-radius-card: 24px;
+  --wg-radius-control: 12px;
+  --wg-shadow-card: 0 16px 40px rgb(35 42 40 / 0.08);
+
+  /* Spacing scale: 4, 8, 12, 16, 24, 32, 48, 64, 96 */
+  --wg-space-1: 4px;
+  --wg-space-2: 8px;
+  --wg-space-3: 12px;
+  --wg-space-4: 16px;
+  --wg-space-5: 24px;
+  --wg-space-6: 32px;
+  --wg-space-7: 48px;
+  --wg-space-8: 64px;
+  --wg-space-9: 96px;
+}

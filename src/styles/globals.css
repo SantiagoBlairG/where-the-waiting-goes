@@ -1,0 +1,90 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'shadcn/tailwind.css';
+@import '@fontsource-variable/geist';
+@import './tokens.css';
+
+@theme inline {
+  /* Project tokens as utilities: bg-page, text-ink, text-ink-2, bg-queue-tint ... */
+  --color-page: var(--wg-page);
+  --color-surface: var(--wg-surface);
+  --color-ink: var(--wg-ink);
+  --color-ink-2: var(--wg-ink-2);
+  --color-line: var(--wg-border);
+  --color-active: var(--wg-active);
+  --color-active-tint: var(--wg-active-tint);
+  --color-queue: var(--wg-queue);
+  --color-queue-tint: var(--wg-queue-tint);
+  --radius-card: var(--wg-radius-card);
+  --radius-control: var(--wg-radius-control);
+  --shadow-card: var(--wg-shadow-card);
+
+  /* shadcn semantic names, mapped onto the project tokens */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --font-sans: 'Geist Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-sans);
+}
+
+:root {
+  --background: var(--wg-page);
+  --foreground: var(--wg-ink);
+  --card: var(--wg-surface);
+  --card-foreground: var(--wg-ink);
+  --popover: var(--wg-surface);
+  --popover-foreground: var(--wg-ink);
+  --primary: var(--wg-active);
+  --primary-foreground: #ffffff;
+  --secondary: var(--wg-active-tint);
+  --secondary-foreground: var(--wg-ink);
+  --muted: var(--wg-active-tint);
+  --muted-foreground: var(--wg-ink-2);
+  --accent: var(--wg-active-tint);
+  --accent-foreground: var(--wg-ink);
+  --destructive: #b3261e;
+  --border: var(--wg-border);
+  --input: var(--wg-border);
+  --ring: var(--wg-active);
+  --radius: var(--wg-radius-control);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply font-sans;
+    background: var(--wg-page);
+    color: var(--wg-ink);
+    font-variant-numeric: normal;
+  }
+  body {
+    @apply bg-background text-foreground;
+    margin: 0;
+    min-height: 100vh;
+  }
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}
