@@ -38,4 +38,4 @@ Mean queue wait by station (order/drinks/pickup): baseline 58/87/0 s, extra cash
 
 ## Status
 
-Not implemented yet (Phase 2).
+Implemented in `src/simulation/` and verified by `engine.test.ts` against every fixture above. UI code must read numbers from this engine (`snapshotAt`, `runToCompletion`, `fullRunResult`), never hardcode them.

@@ -52,6 +52,11 @@ Content hashes for the first two are in `skills-lock.json`. Each skill was insta
 
 `.claude/settings.local.json` registers three hooks that all run `.claude/skills/impeccable/scripts/impeccable hook`: on session start, after every Edit/Write, and on Stop (30s deep pass). The file is git-ignored (`*.local`), so each clone must run `npx impeccable install --providers=claude --scope=project` again. The engine binary `impeccable.exe` lives under `.claude/skills/impeccable/scripts/bin/`.
 
+## Vendored code
+
+- `src/illustrations/hairline/kernel.js`: the Hairline kernel (MIT, Copyright 2026 Lucas Marques) copied from `.claude/skills/hairline-create/kernel.js`, skill revision 37d2e78dcb, kernel sha256 346b48bd. Unchanged except a final `export default HL`. The npm package `@lucasmarkes/hairline` does not export this kernel, so figures for new objects (register, espresso machine, pickup shelf) need the vendored copy.
+- The kernel needs `IntersectionObserver` and `matchMedia`; `src/test-setup.ts` stubs both for jsdom.
+
 ## Not installed (not needed yet)
 
-`@lucasmarkes/hairline` runtime package. Add it in Phase 2 only if the chosen illustration approach needs it.
+`@lucasmarkes/hairline` runtime package: the shipped figures are not coffee-related, so it was not added.

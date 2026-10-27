@@ -39,6 +39,24 @@ Last updated: 2026-10-27
 - Not yet checked: 1440x900 and 768px screenshots in a clean viewport, 200% zoom, keyboard-only pass, reduced motion (nothing animates yet), color contrast numbers.
 - The "Look closer" button, scenario selector, playback and the worker drag are not present (Phases 3 and 4). The bench in beat 7 is a static picture.
 
-## Next: Phase 2 — Story assets and truthful snapshots
+## Phase 2 — Story assets and truthful snapshots: DONE
 
-Refine illustrations with Hairline, build the pure simulation engine against the plan's fixtures, generate the baseline and cashier snapshots from it, and swap them into the stage.
+- [x] Pure TypeScript engine in `src/simulation/` (`engine.ts`, `metrics.ts`, `presets.ts`, `config.ts`, `types.ts`): event queue, integer milliseconds, the plan's same-timestamp order, worker moves (idle moves at once, busy finishes first, latest choice wins, off duty), `snapshotAt` and `runToCompletion`.
+- [x] `engine.test.ts`: all three preset fixtures match exactly (completed 18/18/23, still inside 12/12/7, means 214/214/127 s, last pickup 939/939/765 s, queue waits 58/87/0, 0/145/0, 58/0/0), 69 s service per order, conservation every second for every preset, FIFO, no arrivals at or after t=600, identical results however time is batched, presets immutable, and the worker-move rules.
+- [x] `storySnapshots.ts` now calls the engine. `storySnapshots.test.ts` checks that the numbers quoted in the beat copy match engine output.
+- [x] Hairline: kernel vendored as an ES module (`src/illustrations/hairline/kernel.js`, unchanged apart from one export line), a React host (`HairlineFigure`), and three coffee figures written to Hairline's rules: register, espresso station, pickup shelf.
+- [x] The figures respond to live state: the espresso station shows one ticket per waiting order (up to nine) and lowers its group head while a drink is made; the register opens its drawer and prints a receipt while serving; the pickup shelf lifts a cup being handed over. All three answer the pointer with springs.
+- [x] Old placeholder SVG illustrations deleted. Opening scene uses the Hairline register.
+
+### Honest notes (Phase 2)
+
+- Hairline's own `look.mjs` / `validate.mjs` checks were **not** run: they assume one standalone HTML figure on its bench. The figures were checked by eye in the browser pane (1100px wide), by a scripted pointer test (hover changes the drawing, leave returns it, one thing bright at a time), and for console errors (none).
+- `hairline-create`'s concept-choice step was skipped: the plan already fixes the objects.
+- Worker figures stay a small plain SVG (`Worker.tsx`), not Hairline: they must read as people, not scene objects.
+- Not yet checked: the figures at 390px and 320px wide, touch behavior (the kernel sets `touch-action: pan-y`), reduced motion (the kernel lands springs at once under `prefers-reduced-motion`; unverified here), contrast numbers.
+- The interactive controller (`useExperiment`) does not exist yet; the engine supports it (Phase 4).
+- 23 tests pass: 21 simulation, 1 story-copy-versus-engine, 1 App smoke test (plus a station capacity test).
+
+## Next: Phase 3 — Complete the scroll story
+
+Sticky stage, scroll-linked transitions between the seven beats, text reveals, depth and hover effects, reverse scroll, mobile layout, the explicit replay and handoff reset, skip link and reduced-motion routes, then screenshots at opening, rush, reveal and handoff. This is where the motion the user asked for lands.

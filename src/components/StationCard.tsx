@@ -1,10 +1,11 @@
-import { useId, type CSSProperties } from 'react'
+import { useId, useMemo, type CSSProperties } from 'react'
 import { cn } from '@/lib/utils'
 import { capacityPerMinute, type StationConfig } from '@/simulation/config'
 import type { StationSnapshot } from '@/simulation/types'
-import { EspressoStation } from '@/illustrations/EspressoStation'
-import { PickupShelf } from '@/illustrations/PickupShelf'
-import { Register } from '@/illustrations/Register'
+import { HairlineFigure } from '@/illustrations/hairline/HairlineFigure'
+import { mountEspresso } from '@/illustrations/hairline/espressoFigure'
+import { mountPickup } from '@/illustrations/hairline/pickupFigure'
+import { mountRegister } from '@/illustrations/hairline/registerFigure'
 import { Worker } from '@/illustrations/Worker'
 import { OrderDot } from './OrderDot'
 
@@ -28,10 +29,10 @@ type StationCardProps = {
   className?: string
 }
 
-const illustrations = {
-  order: Register,
-  drinks: EspressoStation,
-  pickup: PickupShelf,
+const figures = {
+  order: { mount: mountRegister, label: 'Order and pay: a counter with a cash register, a card reader and a receipt slot' },
+  drinks: { mount: mountEspresso, label: 'Make drinks: an espresso machine and grinder with a ticket rail, one ticket for each waiting order' },
+  pickup: { mount: mountPickup, label: 'Pick up: a shelf of five lidded cups' },
 } as const
 
 /** Presentation-only wording from the numbers in the snapshot. */
@@ -57,7 +58,8 @@ export function StationCard({
   style,
   className,
 }: StationCardProps) {
-  const Illustration = illustrations[station.id]
+  const figure = figures[station.id]
+  const figureState = useMemo(() => ({ queue: snapshot.queue, inService: snapshot.inService }), [snapshot.queue, snapshot.inService])
   const capacity = capacityPerMinute(station, snapshot.workers)
   const showCounts = detail !== 'named' && !trail
   const showCapacity = detail === 'full' && !compact
@@ -87,7 +89,9 @@ export function StationCard({
         </h3>
       </header>
 
-      {compact ? null : <Illustration className="mx-auto h-auto w-full max-w-[220px] text-ink" />}
+      {compact ? null : (
+        <HairlineFigure mount={figure.mount} state={figureState} label={figure.label} className="mx-auto w-full max-w-[300px]" />
+      )}
 
       <div className="flex items-end gap-2">
         {Array.from({ length: snapshot.workers }, (_, i) => {

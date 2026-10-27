@@ -3,7 +3,8 @@ import { CoffeeStage } from '@/components/CoffeeStage'
 import { OrderDot } from '@/components/OrderDot'
 import { IsoCylinder, IsoFigure } from '@/illustrations/iso'
 import type { Origin } from '@/illustrations/iso-math'
-import { Register } from '@/illustrations/Register'
+import { HairlineFigure } from '@/illustrations/hairline/HairlineFigure'
+import { mountRegister } from '@/illustrations/hairline/registerFigure'
 import { Worker } from '@/illustrations/Worker'
 import { cn } from '@/lib/utils'
 import { MODEL_LABEL, SAME_RUSH_LABEL, beats, type Beat, type BeatId } from './storyBeats'
@@ -93,6 +94,8 @@ function Opening({ beat }: { beat: Beat }) {
   )
 }
 
+const idleRegister = { queue: 0, inService: 0 }
+
 const cupOrigin: Origin = { ox: 40, oy: 56 }
 
 function OpeningScene({ description }: { description: string }) {
@@ -106,7 +109,12 @@ function OpeningScene({ description }: { description: string }) {
       <svg aria-hidden="true" viewBox="0 0 80 12" className="mb-8 w-14 shrink-0 text-ink-2 sm:w-24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeDasharray="2 5" strokeLinecap="round">
         <path d="M2 6h76" />
       </svg>
-      <Register className="h-auto w-40 shrink-0 text-ink sm:w-56" />
+      <HairlineFigure
+        mount={mountRegister}
+        state={idleRegister}
+        label="A café counter with a cash register, a card reader and a receipt slot"
+        className="w-48 shrink-0 sm:w-80"
+      />
       <IsoFigure label="A cup of coffee with a lid, steaming" viewBox="0 0 80 90" className="mb-1 h-auto w-14 shrink-0 text-ink sm:w-20">
         <IsoCylinder origin={cupOrigin} x={0} y={0} z={0} r={1.1} h={2.4} lid />
         <g stroke="currentColor" strokeWidth={1.25} strokeLinecap="round" vectorEffect="non-scaling-stroke">

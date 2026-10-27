@@ -14,6 +14,14 @@
   --wg-radius-control: 12px;
   --wg-shadow-card: 0 16px 40px rgb(35 42 40 / 0.08);
 
+  /* Hairline illustration palette: plate matches the card surface, strokes are ink tints. */
+  --hairline-plate: var(--wg-surface);
+  --hairline-hi: var(--wg-ink);
+  --hairline-edge: #66716b;
+  --hairline-mid: #aab3ad;
+  --hairline-lo: #d3d9d4;
+  --hairline-stroke: 1.15;
+
   /* Spacing scale: 4, 8, 12, 16, 24, 32, 48, 64, 96 */
   --wg-space-1: 4px;
   --wg-space-2: 8px;
