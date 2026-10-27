@@ -207,12 +207,14 @@ function Compare({ surprise = false }: { surprise?: boolean }) {
   const countsAt = surprise ? undefined : (['order'] as const)
   return (
     <div className="flex w-full flex-col gap-8">
-      <p className="text-base">
-        <span className="display text-2xl">{SAME_RUSH_LABEL}</span>
+      <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1.5">
+        <p className="display text-2xl">{SAME_RUSH_LABEL}</p>
         {surprise ? (
-          <span className="tabular opacity-90"> Both cafés: {baselineAtClose.completed} picked up, {baselineAtClose.inShop} still in the shop.</span>
+          <p className="tabular text-base opacity-90">
+            Both cafés: {baselineAtClose.completed} picked up, {baselineAtClose.inShop} still in the shop.
+          </p>
         ) : null}
-      </p>
+      </div>
       <div className="flex flex-col gap-3">
         <h3 className="font-display text-lg font-bold">Original team</h3>
         <CoffeeStage snapshot={baselineAtClose} detail="counts" compact countsAt={countsAt} emphasis={emphasis} />

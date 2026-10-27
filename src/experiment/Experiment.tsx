@@ -129,7 +129,7 @@ export function Experiment() {
       ref={section}
       id="experiment"
       aria-labelledby="experiment-heading"
-      className="relative isolate px-6 py-24 sm:px-12 wide:px-[7vw]"
+      className="relative isolate overflow-x-clip px-6 py-24 sm:px-12 wide:px-[7vw]"
       style={{ backgroundColor: ROOM.bg, color: ROOM.fg }}
     >
       {/* Background layers are clipped on their own so the sticky run bar is not. */}
@@ -348,7 +348,11 @@ export function Experiment() {
           id="run-controls"
           role="group"
           aria-label="Run controls"
-          className="sticky bottom-4 z-40 -mx-2 flex flex-wrap items-center gap-x-4 gap-y-3 rounded-[28px] bg-paper px-4 py-3 text-ink shadow-[0_18px_40px_-12px_rgb(27_38_34/0.55)] ring-1 ring-ink/10 sm:px-6"
+          className={
+            'sticky bottom-4 z-40 -mx-2 flex flex-wrap items-center gap-x-4 gap-y-3 rounded-[28px] bg-paper px-4 py-3 text-ink shadow-[0_18px_40px_-12px_rgb(27_38_34/0.55)] ring-1 ring-ink/10 sm:px-6 ' +
+            // A soft fade behind the bar, so content dissolves under it instead of peeking out below its edge.
+            'before:pointer-events-none before:absolute before:-bottom-4 before:-top-12 before:-z-10 before:-inset-x-2 before:bg-gradient-to-t before:from-[#c8ded3] before:from-50% before:to-transparent'
+          }
         >
           <Button
             onClick={running ? actions.pause : actions.play}

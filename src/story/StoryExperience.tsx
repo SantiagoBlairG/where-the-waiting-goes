@@ -379,8 +379,10 @@ export function StoryExperience() {
           style={{ left: GUTTER, color: theme0.fg }}
         >
           <p className="text-lg font-medium">Scroll to follow one order</p>
+          {/* The mouse and touch link. Keyboard users have the skip link above, so this is not a second tab stop. */}
           <a
             href="#experiment"
+            tabIndex={-1}
             className="pointer-events-auto -ml-3 rounded-control px-3 py-2 text-sm font-semibold underline underline-offset-4 outline-none transition-opacity hover:opacity-70 focus-visible:ring-3 focus-visible:ring-ring/50"
           >
             Skip to experiment
@@ -543,12 +545,14 @@ const CompareScene = memo(function CompareScene({ phase }: { phase: 'fix' | 'sur
   const countsAt = surprise ? undefined : (['order'] as const)
   return (
     <div className="flex w-full flex-col gap-5">
-      <p className="text-base">
-        <span className="display text-2xl">{SAME_RUSH_LABEL}</span>
+      <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+        <p className="display text-2xl">{SAME_RUSH_LABEL}</p>
         {surprise ? (
-          <span className="tabular opacity-90"> Both cafés: {baselineAtClose.completed} picked up, {baselineAtClose.inShop} still in the shop.</span>
+          <p className="tabular text-base opacity-90">
+            Both cafés: {baselineAtClose.completed} picked up, {baselineAtClose.inShop} still in the shop.
+          </p>
         ) : null}
-      </p>
+      </div>
       <div data-row className="flex flex-col gap-2.5">
         <h3 className="font-display text-lg font-bold">Original team</h3>
         <CoffeeStage snapshot={baselineAtClose} detail="counts" compact countsAt={countsAt} emphasis={emphasis} />

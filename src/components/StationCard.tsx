@@ -195,7 +195,7 @@ function StationCardBase({
         ? '[--ly:-8px] hover:[--ly:-12px]'
         : '[--ly:0px] hover:[--ly:-6px]',
     'focus-within:[--ly:-6px]',
-    trail === 'next' && 'opacity-[0.72]',
+    trail === 'next' && 'opacity-[0.85]',
   )
 
   const glare = (
@@ -237,8 +237,9 @@ function StationCardBase({
             <div className="flex flex-col items-end gap-1 text-right">
               <p className="text-sm text-ink-2">Waiting</p>
               {detail === 'named' ? (
-                <span aria-label="not shown yet" className="display text-[3.6rem] leading-[0.9] text-line">
-                  ?
+                <span className="display text-[3.6rem] leading-[0.9] text-ink-2/70">
+                  <span aria-hidden="true">?</span>
+                  <span className="sr-only">not shown yet</span>
                 </span>
               ) : (
                 waitingNumber
