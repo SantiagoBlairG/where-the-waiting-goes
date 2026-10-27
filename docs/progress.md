@@ -2,6 +2,15 @@
 
 Last updated: 2026-10-27
 
+## Where we stopped (resume here)
+
+- **Phases 0 to 5 are done and pushed** to github.com/SantiagoBlairG/where-the-waiting-goes (private), branch `main`, working tree clean. **Next is Phase 6** (refinement and verification), then Phase 7 (README, handoff, deployment instructions). Vercel is connected to the account but this repo has **not** been deployed or linked yet; deploy only when asked.
+- **To run it:** `npm ci`, then `npm run serve` (production build at http://localhost:4173, what we judge) or `npm run dev` (development, slower). The Claude preview config `prod` runs the same thing. The pinned scroll story needs a window at least 900px wide and 660px tall; narrower or shorter windows get the plain layout with its own scroll reveals.
+- **To check it:** `npm run typecheck && npm run lint && npm test` (63 unit tests), `npx playwright test --project=desktop` (33 tests, about a minute) and `--project=mobile`. Screenshots regenerate with `CAPTURE=1 npx playwright test --project=desktop`.
+- **Open items for Phase 6 and after:** the comprehension gate (a person unfamiliar with the project should explain the result from the page alone); contrast numbers for every ticket and panel; 200% zoom; keyboard-only pass over the whole page; touch dragging of the worker and the rail handle; a performance profile of a full scroll pass plus a complete run (throttled runs showed some frames over 50ms at 6x CPU slowdown); remove effects that distract; Impeccable polish and a Taste visual review without restarting the design.
+- **The client's design preferences** (from feedback; keep them): calm palette from their green reference (stone, mist, sage, sand, forest, ember only for queues); Bricolage Grotesque for titles and numbers, Plus Jakarta Sans for body; paper order-ticket cards; no floating illustrations (everything inside a card); no footer strip; always generous padding and no text overlap at any window size; scroll beats long enough to follow, with floating notes. The four Pinterest references could not be read by tooling; screenshots of them would let us match their motion ideas.
+- **The client's last unfinished message** once ended after "Can you"; the request was never learned.
+
 ## Phase 0 — Establish the project: DONE
 
 - [x] Inspected folder; only `plan.md` and skill installs existed. `plan.md` untouched.
