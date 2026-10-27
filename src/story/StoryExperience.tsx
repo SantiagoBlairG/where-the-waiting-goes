@@ -7,6 +7,7 @@ import { gsap, ScrollTrigger, useGSAP } from '@/lib/gsap'
 import { cn } from '@/lib/utils'
 import type { StationId } from '@/simulation/config'
 import { MODEL_LABEL, SAME_RUSH_LABEL, beats } from './storyBeats'
+import { rushNote, stopNote, type StepNote } from './stepNotes'
 import { OpeningCard } from './OpeningCard'
 import { RevealText } from './RevealText'
 import { baselineAtClose, cashierAtClose } from './storySnapshots'
@@ -49,7 +50,30 @@ function positionStage(root: HTMLElement | null, beat: number) {
   const area = root?.querySelector<HTMLElement>('[data-stage-area]')
   const group = root?.querySelector<HTMLElement>('[data-text="' + beat + '"]')
   if (!area || !group) return
-  gsap.set(area, { top: group.offsetTop + group.offsetHeight + 28 })
+  // Breathing room between the words and the tickets: about 4.5% of the window height, at least 36px.
+  const gap = Math.max(36, Math.round(window.innerHeight * 0.045))
+  gsap.set(area, { top: group.offsetTop + group.offsetHeight + gap })
+}
+
+/**
+ * A floating note that says what is happening at the current step. It sits above the ticket the
+ * step is about, with a small tail pointing down at it. A new note slides in when the step changes.
+ */
+function FloatingNote({ note, column }: { note: StepNote; column: number }) {
+  // Centre the note over its column, but keep it inside the row.
+  const WIDTH = 46
+  const center = column * 33.333 + 16.667
+  const left = Math.min(Math.max(center - WIDTH / 2, 0), 100 - WIDTH)
+  const tail = ((center - left) / WIDTH) * 100
+  return (
+    <div key={note.text} className="absolute bottom-0 animate-in fade-in-0 slide-in-from-bottom-2 duration-500 motion-reduce:animate-none" style={{ left: left + '%', width: WIDTH + '%' }}>
+      <div className="relative rounded-2xl bg-paper px-5 py-3.5 text-ink shadow-[0_10px_24px_-8px_rgb(27_38_34/0.35)]">
+        <p className="text-sm font-bold leading-tight text-forest">{note.where}</p>
+        <p className="mt-1 text-[0.95rem] leading-snug">{note.text}</p>
+        <span aria-hidden="true" className="absolute -bottom-1.5 size-3 -translate-x-1/2 rotate-45 bg-paper" style={{ left: tail + '%' }} />
+      </div>
+    </div>
+  )
 }
 
 const mmss = (seconds: number) => `${Math.floor(seconds / 60)}:${String(Math.round(seconds % 60)).padStart(2, '0')}`
@@ -109,14 +133,21 @@ export function StoryExperience() {
         onUpdate: (self) => apply(self.progress),
         onRefresh: (self) => apply(self.progress),
       })
+      // Keep the stage below the headline whenever the text reflows for any reason: window resize,
+      // a font finishing loading, or a different wrap. A one-off measurement goes stale.
       const relayout = () => positionStage(root.current, live.current.step.beat)
+      const observer = new ResizeObserver(relayout)
+      q('[data-text]').forEach((g) => observer.observe(g))
       window.addEventListener('resize', relayout)
+      document.fonts?.addEventListener('loadingdone', relayout)
       document.fonts?.ready.then(() => {
         relayout()
         ScrollTrigger.refresh()
       })
       return () => {
+        observer.disconnect()
         window.removeEventListener('resize', relayout)
+        document.fonts?.removeEventListener('loadingdone', relayout)
         st.kill()
       }
     },
@@ -217,6 +248,8 @@ export function StoryExperience() {
     STAGE_IDS.map((id, i): [StationId, TrailState] => [id, i < step.stop ? 'past' : i === step.stop ? 'now' : 'next']),
   ) as Record<StationId, TrailState>
   const theme0 = BEAT_THEMES[0]
+  // The step note: one per stop in the traced-order beat, one per phase of the rush clock.
+  const note: StepNote | null = beat === 1 ? stopNote(step.stop) : beat === 2 ? rushNote(processSnapshot) : null
 
   return (
     <div ref={root}>
@@ -276,6 +309,18 @@ export function StoryExperience() {
                 <span className="mt-3 text-lg font-medium tabular opacity-90">
                   {beat === 6 && rewind === 0 ? 'Start of the rush. Paused.' : 'Rush clock, of 10:00'}
                 </span>
+                {beat === 2 ? (
+                  <span className="mt-2 flex items-center gap-5 text-base tabular">
+                    <span className="flex items-baseline gap-2">
+                      <span className="opacity-80">Picked up</span>
+                      <span className="display text-2xl leading-none">{processSnapshot.completed}</span>
+                    </span>
+                    <span className="flex items-baseline gap-2">
+                      <span className="opacity-80">Still in the shop</span>
+                      <span className="display text-2xl leading-none">{processSnapshot.inShop}</span>
+                    </span>
+                  </span>
+                ) : null}
               </div>
             ) : null}
 
@@ -287,13 +332,17 @@ export function StoryExperience() {
               <Layer scene="process">
                 <div className="flex w-full items-end">
                   <div className="min-w-0 flex-1">
+                    {note ? (
+                      <div className="relative mb-5 h-[5.25rem]">
+                        <FloatingNote note={note} column={STAGE_IDS.indexOf(note.station)} />
+                      </div>
+                    ) : null}
                     <CoffeeStage
                       snapshot={processSnapshot}
                       detail={beat === 1 ? 'named' : beat === 2 ? 'counts' : 'full'}
                       trail={beat === 1 ? trail : undefined}
                       extraAt={beat === 5 ? 'order' : undefined}
                       emphasis={beat === 5 ? { station: 'drinks', kind: 'both' } : undefined}
-                      showTotals={beat === 2}
                     />
                   </div>
                   <div
@@ -445,8 +494,8 @@ function Layer({
     const i = inner.current
     if (!o || !i) return
     const fit = () => {
-      // 24px of slack leaves room for the active lift and hover lift.
-      const scale = Math.min(1, (o.clientHeight - 24) / i.offsetHeight)
+      // 32px of slack leaves room for the active lift and hover lift.
+      const scale = Math.min(1, (o.clientHeight - 32) / i.offsetHeight)
       i.style.transform = scale < 1 ? `scale(${scale.toFixed(3)})` : ''
     }
     const ro = new ResizeObserver(fit)

@@ -111,3 +111,14 @@ Open items:
 ## Overlap fix (2026-10-27)
 
 Client reported text overlapping on some beats (the comparison label ran into the subtitle). Cause: the stage began at a fixed 31% of the window height, but the headline plus subtitle is taller than that in shorter windows. Fixes: the stage now starts below whichever text group is showing (measured on every beat, on resize and when fonts load); headline and subtitle sizes follow the window height as well as its width; the pinned story now needs a window at least 660px tall (shorter ones get the plain layout); comparison tickets are slightly more compact. New end-to-end test `no overlapping text in the pinned story` checks, at 1440x900, 1280x720, 1100x700 and 960x680, that on every beat the stage starts below the text and stays inside the window. Run against the previous code it fails at three of the four sizes, so it detects the bug.
+
+## Overlap, spacing and pacing pass (2026-10-27)
+
+Client: some slides still overlapped text, some content sat too close to the text, some scroll sections were too fast, and the order-progress beat needed to be slower with a floating note explaining each step.
+
+- **Overlap:** the stage position was measured once per beat, so any later reflow of the headline (a font finishing loading, a wrap change, a resize) left it stale. It is now re-measured by a ResizeObserver on every text group plus resize and font-loading events. The gap between text and stage is about 4.5% of the window height (at least 36px) and the scene fit leaves 32px of slack. The overlap test now also runs at 1752x666 and 1920x1080 (six sizes in all, every beat). A settled-state sweep of 30 window sizes between 900x660 and 1920x1080 found no overlap; the transient cause could not be reproduced in the sweep, so the observer fix is the evidence-based remedy, not a confirmed reproduction.
+- **Pacing:** scroll length per beat went from [1, 1.2, 2.6, 1.3, 1.2, 1.3, 1] to [1.1, 2.4, 5, 1.8, 1.8, 2, 1.2] screens. The rush now takes five screens (about 150px of scroll per 20 simulated seconds) and the three-stops beat gives each stop about half a screen.
+- **Floating notes** (`src/story/stepNotes.ts`, `FloatingNote`): in the three-stops beat one note per stop; in the rush one note per phase of the clock (first order, a line at the register, a second line for drinks, pickup keeps up, both lines grow, the last orders, ten minutes in). Each note sits above the ticket it is about with a tail pointing at it. All numbers come from the model constants or the snapshot, and a unit test checks every claim against the engine (for example that pickup never has a line).
+- The rush totals (picked up, still in the shop) moved under the clock to free vertical space for the note.
+- Fixed a rounding bug: `locate(1)` returned 0.9999999999999994 for the end of the last beat with the new weights.
+- The Phase 3 note about total scroll length is now 15.3 screens.

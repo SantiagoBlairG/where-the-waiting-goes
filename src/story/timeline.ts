@@ -9,7 +9,7 @@ import type { Snapshot } from '@/simulation/types'
  */
 
 /** Scroll length of each beat, in viewport heights. The rush gets the most: time plays out inside it. */
-export const BEAT_WEIGHTS = [1, 1.2, 2.6, 1.3, 1.2, 1.3, 1] as const
+export const BEAT_WEIGHTS = [1.1, 2.4, 5, 1.8, 1.8, 2, 1.2] as const
 export const BEAT_COUNT = BEAT_WEIGHTS.length
 export const TOTAL_WEIGHT = BEAT_WEIGHTS.reduce((a, b) => a + b, 0)
 
@@ -17,6 +17,8 @@ const clamp01 = (v: number) => Math.min(1, Math.max(0, v))
 
 /** Where the page is: which beat, and how far through it (0 to 1). */
 export function locate(progress: number): { beat: number; local: number } {
+  // The very end is exactly the end of the last beat, whatever the rounding of the weights.
+  if (progress >= 1) return { beat: BEAT_COUNT - 1, local: 1 }
   const p = clamp01(progress) * TOTAL_WEIGHT
   let start = 0
   for (let beat = 0; beat < BEAT_COUNT; beat++) {

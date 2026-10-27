@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 
 /** Scroll length of each beat in viewport heights. Keep in sync with src/story/timeline.ts. */
-const WEIGHTS = [1, 1.2, 2.6, 1.3, 1.2, 1.3, 1]
+const WEIGHTS = [1.1, 2.4, 5, 1.8, 1.8, 2, 1.2]
 const TOTAL = WEIGHTS.reduce((a, b) => a + b, 0)
 const HEADLINES = [
   'If ordering gets faster, why doesn’t your coffee?',
@@ -56,12 +56,14 @@ test.describe('pinned story on a wide screen', () => {
     await goTo(page, 1, 0.5)
     await settle(page, 1)
     await expect(page.locator('[data-scene="process"]')).toContainText('Your order is here')
+    await expect(page.locator('[data-scene="process"]')).toContainText('A barista makes your drink. This takes 30 seconds.')
     await shot('2-three-stops')
 
     await goTo(page, 2, 0.55)
     await settle(page, 2)
     const forwardClock = await clock()
     expect(forwardClock).toContain('5:40')
+    await expect(page.locator('[data-scene="process"]')).toContainText('both lines keep growing')
     await goTo(page, 2, 0.97)
     await page.waitForTimeout(1200)
     await shot('3-rush')
@@ -140,6 +142,8 @@ test.describe('no overlapping text in the pinned story', () => {
     { width: 1280, height: 720 },
     { width: 1100, height: 700 },
     { width: 960, height: 680 },
+    { width: 1752, height: 666 },
+    { width: 1920, height: 1080 },
   ]
   for (const size of sizes) {
     test(`${size.width}x${size.height}`, async ({ page }) => {
