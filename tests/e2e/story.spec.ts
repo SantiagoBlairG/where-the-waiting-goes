@@ -48,7 +48,7 @@ test.describe('pinned story on a wide screen', () => {
     const shot = async (name: string) => {
       if (capture) await page.screenshot({ path: `docs/screenshots/${name}.png` })
     }
-    const clock = () => page.locator('[data-scene="process"] p', { hasText: /Rush clock|Start of the rush/ }).first().innerText()
+    const clock = () => page.locator('[data-clock]').innerText()
 
     await page.waitForTimeout(2000)
     await shot('1-opening')
@@ -84,7 +84,7 @@ test.describe('pinned story on a wide screen', () => {
 
     await goTo(page, 6, 0.9)
     await settle(page, 6)
-    await expect(page.locator('[data-scene="process"]')).toContainText('Start of the rush. Paused.')
+    await expect(page.locator('[data-clock]')).toContainText('Start of the rush. Paused.')
     await expect(page.locator('[data-bench]')).toBeVisible()
     await shot('7-your-turn')
 

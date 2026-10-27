@@ -2,24 +2,33 @@
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
 @import '@fontsource-variable/geist';
+@import '@fontsource-variable/bricolage-grotesque/standard.css';
 @import './tokens.css';
 
+/* The pinned layout and the three-across ticket row start at 900px. */
+@theme {
+  --breakpoint-wide: 56.25rem;
+}
+
 @theme inline {
-  /* Project tokens as utilities: bg-page, text-ink, text-ink-2, bg-queue-tint ... */
-  --color-page: var(--wg-page);
-  --color-surface: var(--wg-surface);
   --color-ink: var(--wg-ink);
   --color-ink-2: var(--wg-ink-2);
-  --color-line: var(--wg-border);
+  --color-paper: var(--wg-paper);
+  --color-line: var(--wg-line);
+  --color-butter: var(--wg-butter);
+  --color-tomato: var(--wg-tomato);
+  --color-cobalt: var(--wg-cobalt);
+  --color-espresso: var(--wg-espresso);
+  --color-green: var(--wg-green);
+  --color-green-tint: var(--wg-green-tint);
   --color-active: var(--wg-active);
   --color-active-tint: var(--wg-active-tint);
   --color-queue: var(--wg-queue);
   --color-queue-tint: var(--wg-queue-tint);
   --radius-card: var(--wg-radius-card);
   --radius-control: var(--wg-radius-control);
-  --shadow-card: var(--wg-shadow-card);
 
-  /* shadcn semantic names, mapped onto the project tokens */
+  /* shadcn semantic names mapped onto the project tokens */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -43,18 +52,21 @@
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) * 1.4);
   --radius-2xl: calc(var(--radius) * 1.8);
+
+  /* Two voices: a quirky, heavy grotesque for headlines and big numbers; a quiet one for small text. */
   --font-sans: 'Geist Variable', ui-sans-serif, system-ui, sans-serif;
-  --font-heading: var(--font-sans);
+  --font-display: 'Bricolage Grotesque Variable', 'Geist Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-display);
 }
 
 :root {
-  --background: var(--wg-page);
+  --background: var(--wg-butter);
   --foreground: var(--wg-ink);
-  --card: var(--wg-surface);
+  --card: var(--wg-paper);
   --card-foreground: var(--wg-ink);
-  --popover: var(--wg-surface);
+  --popover: var(--wg-paper);
   --popover-foreground: var(--wg-ink);
-  --primary: var(--wg-active);
+  --primary: var(--wg-cobalt);
   --primary-foreground: #ffffff;
   --secondary: var(--wg-active-tint);
   --secondary-foreground: var(--wg-ink);
@@ -63,9 +75,9 @@
   --accent: var(--wg-active-tint);
   --accent-foreground: var(--wg-ink);
   --destructive: #b3261e;
-  --border: var(--wg-border);
-  --input: var(--wg-border);
-  --ring: var(--wg-active);
+  --border: var(--wg-line);
+  --input: var(--wg-line);
+  --ring: var(--wg-cobalt);
   --radius: var(--wg-radius-control);
 }
 
@@ -75,24 +87,68 @@
   }
   html {
     @apply font-sans;
-    background: var(--wg-page);
+    background: var(--wg-butter);
     color: var(--wg-ink);
-    font-variant-numeric: normal;
   }
   body {
-    @apply bg-background text-foreground;
     margin: 0;
     min-height: 100vh;
-  }
-  /* Mask for revealed words: clips the slide, but leaves room for descenders. */
-  .word-mask {
-    display: inline-block;
-    overflow: hidden;
-    vertical-align: bottom;
-    padding-bottom: 0.14em;
-    margin-bottom: -0.14em;
+    background: var(--wg-butter);
+    color: var(--wg-ink);
+    -webkit-font-smoothing: antialiased;
   }
   .tabular {
     font-variant-numeric: tabular-nums;
   }
+  /* Headline voice: condensed, heavy, tight. */
+  .display {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-stretch: 84%;
+    font-variation-settings: 'opsz' 96;
+    letter-spacing: -0.018em;
+  }
+  /* Mask for revealed words: clips the slide, with room for ascenders and descenders. */
+  .word-mask {
+    display: inline-block;
+    overflow: hidden;
+    vertical-align: bottom;
+    padding: 0.08em 0.04em 0.16em;
+    margin: -0.08em -0.04em -0.16em;
+  }
+}
+
+/* Static grain over the colored rooms. One cheap, non-animated layer. */
+.grain {
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.55 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  background-size: 160px 160px;
+  opacity: 0.1;
+}
+
+/* Paper ticket: notched sides at the perforation. The shadow comes from a filter on the wrapper
+   because a mask would cut a box-shadow off. */
+.ticket {
+  --notch-y: 62%;
+  --notch-r: 12px;
+  -webkit-mask:
+    radial-gradient(circle var(--notch-r) at 0 var(--notch-y), #0000 calc(100% - 0.5px), #000) left / 51% 100% no-repeat,
+    radial-gradient(circle var(--notch-r) at 100% var(--notch-y), #0000 calc(100% - 0.5px), #000) right / 51% 100% no-repeat;
+  mask:
+    radial-gradient(circle var(--notch-r) at 0 var(--notch-y), #0000 calc(100% - 0.5px), #000) left / 51% 100% no-repeat,
+    radial-gradient(circle var(--notch-r) at 100% var(--notch-y), #0000 calc(100% - 0.5px), #000) right / 51% 100% no-repeat;
+}
+/* A static, pre-painted shadow behind the ticket. It never repaints when counts change, unlike a
+   blur filter on the ticket itself. */
+.ticket-shadow {
+  position: relative;
+}
+.ticket-shadow::before {
+  content: '';
+  position: absolute;
+  inset: 10px 8px 0;
+  border-radius: var(--wg-radius-card);
+  box-shadow:
+    0 2px 3px rgb(29 18 13 / 0.2),
+    0 24px 30px -8px rgb(29 18 13 / 0.34);
+  pointer-events: none;
 }

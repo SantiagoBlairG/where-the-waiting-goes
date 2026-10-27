@@ -57,9 +57,19 @@ Last updated: 2026-10-27
 - The interactive controller (`useExperiment`) does not exist yet; the engine supports it (Phase 4).
 - 23 tests pass: 21 simulation, 1 story-copy-versus-engine, 1 App smoke test (plus a station capacity test).
 
+## Redesign pass after client feedback (2026-10-27)
+
+The client judged the first Phase 3 build "terrible in every way": generic type, white cards and a lot of white space, choppy motion, text reveals that did not appear to work, no colour or depth. They also asked whether the front-end design skills were really being used. Honest answer: they were used lightly (Taste's copy rules and idea step, Impeccable's init), and the plan's restrained off-white direction was followed too literally. This pass loads `frontend-design` properly, plans against its defaults, and replaces the visual layer. See "Redesign" in `DESIGN.md`.
+
+What was found and fixed:
+- **Why reveals "did not work":** the preview pane is narrower than 1024px, so the visitor only ever saw the plain fallback layout, which had no reveals or scroll effects at all. The pinned experience now starts at 900px wide, and the fallback has its own scroll reveals, ticket entrances and ring parallax.
+- **Why it was choppy:** the preview ran Vite's development build (React's dev runtime alone was about 1.7 s of CPU in a 160-step scroll at 4x throttle), on top of expensive paint work (a hover glare repainting a masked, blur-shadowed ticket on every pointer move, and blur filters re-running on every count change). Fixes: judge the production build (`npm run serve`, preview config `prod`), glare is now a translated gradient, shadows are static elements, tilt rectangles are cached, scenes are memoized, and GSAP follows the wall clock instead of crawling when frames are sparse.
+- **Measured** in headless Chrome with CPU throttling, same scripted scroll (160 wheel steps plus pointer moves): production at 1x p95 14 ms, no frames over 50 ms; at 4x p95 28 ms; at 6x p95 49 ms (was 98 ms in dev); at 12x p95 119 ms. This is better, not perfect: at 6x and 12x slowdown frames over 50 ms still occur (33 and 134). The remaining cost is mostly browser style, layout and paint work in the pinned room.
+- Not yet looked at by the client in a wide window. The in-app preview pane is often narrower than 900px, so use a normal browser window (or widen the pane) to see the pinned version.
+
 ## Phase 3 — Complete the scroll story: DONE (pending a human comprehension check)
 
-- [x] Pinned story (`src/story/StoryExperience.tsx`) on screens at least 1024px wide and 560px tall with motion allowed: one sticky stage, scroll position maps to a beat (`src/story/timeline.ts`, pure and tested). React state changes only on beat, rush-step or traced-stop changes, never per scroll pixel.
+- [x] Pinned story (`src/story/StoryExperience.tsx`) on screens at least 900px wide and 520px tall with motion allowed: one sticky stage, scroll position maps to a beat (`src/story/timeline.ts`, pure and tested). React state changes only on beat, rush-step or traced-stop changes, never per scroll pixel.
 - [x] Scroll drives real content: in the rush beat the simulated clock follows the scroll through 31 engine snapshots (the line visibly grows, dots pop in); in beat 2 one order dot glides between the three cards and the cards say where it has been.
 - [x] Text reveals: headlines slide up word by word from masks and exit the other way when scrolling back (`RevealText`). Supporting lines rise and fade in.
 - [x] Depth and hover: cards on a GSAP-driven arc with perspective, pointer-linked tilt and per-card parallax; cards lift on hover and focus (CSS, on the card, not the GSAP wrapper); Hairline figures answer the pointer; chapter rail with labels on hover and focus.

@@ -1,4 +1,4 @@
-import { Fragment } from 'react'
+import { Fragment, memo } from 'react'
 import { cn } from '@/lib/utils'
 import { STATIONS, type StationId } from '@/simulation/config'
 import type { Snapshot } from '@/simulation/types'
@@ -9,8 +9,6 @@ type CoffeeStageProps = {
   snapshot: Snapshot
   detail: CardDetail
   compact?: boolean
-  /** Shallow arc with modest perspective on wide screens (CSS only). */
-  arc?: boolean
   emphasis?: { station: StationId; kind: 'queue' | 'capacity' | 'both' }
   /** The station whose last worker is the flexible extra worker. */
   extraAt?: StationId
@@ -19,17 +17,20 @@ type CoffeeStageProps = {
   trailMarker?: boolean
   /** Stations whose counts are shown. Others stay at "named" so a later beat can reveal them. */
   countsAt?: readonly StationId[]
-  /** Show "Picked up" and "Still in the shop" under the cards. */
+  /** Show "Picked up" and "Still in the shop" under the tickets. */
   showTotals?: boolean
   className?: string
 }
 
-/** Presentation of the process: renders whatever snapshot it is given, owns no business rules. */
-export function CoffeeStage({
+/**
+ * Presentation of the process: renders whatever snapshot it is given and owns no business rules.
+ * Each ticket sits in a [data-card] wrapper that the story's timeline may move; the tickets
+ * themselves only ever respond to the pointer.
+ */
+function CoffeeStageBase({
   snapshot,
   detail,
   compact = false,
-  arc = false,
   emphasis,
   extraAt,
   trail,
@@ -38,16 +39,13 @@ export function CoffeeStage({
   showTotals = false,
   className,
 }: CoffeeStageProps) {
-  // Arc transforms sit on a wrapper per card so the card's own styles stay free for hover later.
-  const arcClass = ['lg:[transform:perspective(1400px)_rotateY(5deg)_translateY(14px)]', '', 'lg:[transform:perspective(1400px)_rotateY(-5deg)_translateY(14px)]']
-
   return (
-    <div className={cn('flex flex-col gap-6', className)}>
-      <div className="flex flex-col items-stretch gap-3 lg:flex-row lg:items-stretch lg:gap-2">
+    <div className={cn('flex w-full flex-col gap-4', className)}>
+      <div className={cn('flex flex-col items-stretch gap-3 wide:flex-row wide:gap-1.5', compact ? 'wide:items-stretch' : 'wide:items-center')}>
         {STATIONS.map((station, index) => (
           <Fragment key={station.id}>
             {index > 0 ? <Connector compact={compact} /> : null}
-            <div data-card={index} className={cn('min-w-0 flex-1', arc ? arcClass[index] : '')}>
+            <div data-card={index} className="min-w-0 flex-1 basis-0">
               <StationCard
                 station={station}
                 snapshot={snapshot.stations[index]}
@@ -64,15 +62,15 @@ export function CoffeeStage({
       </div>
 
       {showTotals ? (
-        <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-base text-ink">
+        <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-base">
           <p className="flex items-center gap-2">
             <OrderDot state="done" />
-            <span className="text-ink-2">Picked up</span>
-            <span className="font-semibold tabular">{snapshot.completed}</span>
+            <span className="opacity-80">Picked up</span>
+            <span className="display text-2xl leading-none tabular">{snapshot.completed}</span>
           </p>
           <p className="flex items-center gap-2">
-            <span className="text-ink-2">Still in the shop</span>
-            <span className="font-semibold tabular">{snapshot.inShop}</span>
+            <span className="opacity-80">Still in the shop</span>
+            <span className="display text-2xl leading-none tabular">{snapshot.inShop}</span>
           </p>
         </div>
       ) : null}
@@ -82,10 +80,12 @@ export function CoffeeStage({
 
 function Connector({ compact }: { compact: boolean }) {
   return (
-    <span aria-hidden="true" className={cn('grid shrink-0 place-items-center text-ink-2', compact ? 'lg:w-5' : 'lg:w-8')}>
-      <svg viewBox="0 0 24 24" className="size-5 rotate-90 lg:rotate-0" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M3 12h17M14 6l6 6-6 6" />
+    <span aria-hidden="true" className={cn('grid shrink-0 place-items-center opacity-80', compact ? 'wide:w-6' : 'wide:w-10')}>
+      <svg viewBox="0 0 40 24" className="h-5 w-8 rotate-90 wide:rotate-0" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M3 12h30M26 5l8 7-8 7" />
       </svg>
     </span>
   )
 }
+
+export const CoffeeStage = memo(CoffeeStageBase)

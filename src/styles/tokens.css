@@ -1,26 +1,38 @@
-/* Single source of design tokens (values from plan.md §6, documented in DESIGN.md). */
+/*
+ * Design tokens. Single source; see DESIGN.md.
+ * Direction (replaces the plan's off-white palette at the client's request): the room changes
+ * color as the story does. Butter for the calm morning, tomato as the pressure builds, cobalt
+ * for the fix, espresso for the reveal. Paper tickets sit on a counter.
+ */
 :root {
-  --wg-page: #f7f6f2;
-  --wg-surface: #ffffff;
-  --wg-ink: #232a28;
-  --wg-ink-2: #59645f;
-  --wg-border: #dadfd9;
-  --wg-active: #176b60;
-  --wg-active-tint: #e5f0ec;
-  --wg-queue: #9a541b;
-  --wg-queue-tint: #fbedd9;
+  --wg-ink: #1d120d;
+  --wg-ink-2: #5a463a;
+  --wg-paper: #fffaf0;
+  --wg-line: #d9c7ad;
 
-  --wg-radius-card: 24px;
+  --wg-butter: #ffd84a;
+  --wg-tomato: #ff5a36;
+  --wg-cobalt: #2b3fe0;
+  --wg-espresso: #1d120d;
+  --wg-green: #0e8c5b;
+
+  /* Text-safe variants on paper */
+  --wg-active: #2b3fe0; /* being made */
+  --wg-active-tint: #e4e8ff;
+  --wg-queue: #c2310f; /* waiting */
+  --wg-queue-tint: #ffe3d9;
+  --wg-green-tint: #d6f3e5;
+
+  --wg-radius-card: 22px;
   --wg-radius-control: 12px;
-  --wg-shadow-card: 0 16px 40px rgb(35 42 40 / 0.08);
 
-  /* Hairline illustration palette: plate matches the card surface, strokes are ink tints. */
-  --hairline-plate: var(--wg-surface);
+  /* Hairline illustration palette: plate matches the ticket paper, strokes are warm ink tints. */
+  --hairline-plate: var(--wg-paper);
   --hairline-hi: var(--wg-ink);
-  --hairline-edge: #66716b;
-  --hairline-mid: #aab3ad;
-  --hairline-lo: #d3d9d4;
-  --hairline-stroke: 1.15;
+  --hairline-edge: #6f5b4d;
+  --hairline-mid: #c3b09a;
+  --hairline-lo: #e4d6c2;
+  --hairline-stroke: 1.2;
 
   /* Spacing scale: 4, 8, 12, 16, 24, 32, 48, 64, 96 */
   --wg-space-1: 4px;
