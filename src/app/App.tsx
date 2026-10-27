@@ -1,9 +1,9 @@
-import { StoryStatic } from '@/story/StoryStatic'
+import { StoryRoot } from '@/story/StoryRoot'
 
 export function App() {
   return (
     <main>
-      <StoryStatic />
+      <StoryRoot />
     </main>
   )
 }

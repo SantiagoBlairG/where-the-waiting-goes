@@ -16,6 +16,7 @@ type CoffeeStageProps = {
   extraAt?: StationId
   /** Beat 2: show where one traced order is, instead of counts. */
   trail?: Record<StationId, TrailState>
+  trailMarker?: boolean
   /** Stations whose counts are shown. Others stay at "named" so a later beat can reveal them. */
   countsAt?: readonly StationId[]
   /** Show "Picked up" and "Still in the shop" under the cards. */
@@ -32,6 +33,7 @@ export function CoffeeStage({
   emphasis,
   extraAt,
   trail,
+  trailMarker,
   countsAt,
   showTotals = false,
   className,
@@ -41,11 +43,11 @@ export function CoffeeStage({
 
   return (
     <div className={cn('flex flex-col gap-6', className)}>
-      <div className="flex flex-col items-stretch gap-3 lg:flex-row lg:items-center lg:gap-2">
+      <div className="flex flex-col items-stretch gap-3 lg:flex-row lg:items-stretch lg:gap-2">
         {STATIONS.map((station, index) => (
           <Fragment key={station.id}>
             {index > 0 ? <Connector compact={compact} /> : null}
-            <div className={cn('min-w-0 flex-1', arc ? arcClass[index] : '')}>
+            <div data-card={index} className={cn('min-w-0 flex-1', arc ? arcClass[index] : '')}>
               <StationCard
                 station={station}
                 snapshot={snapshot.stations[index]}
@@ -54,6 +56,7 @@ export function CoffeeStage({
                 emphasis={emphasis?.station === station.id ? emphasis.kind : undefined}
                 hasExtraWorker={extraAt === station.id}
                 trail={trail?.[station.id]}
+                trailMarker={trailMarker}
               />
             </div>
           </Fragment>

@@ -19,7 +19,11 @@ export function OrderDot({ state, className }: { state: DotState; className?: st
   return (
     <span
       aria-hidden="true"
-      className={cn('inline-block size-3.5 shrink-0 rounded-full border-2', styles[state], className)}
+      className={cn(
+        'inline-block size-3.5 shrink-0 rounded-full border-2 animate-in zoom-in-50 fade-in-0 duration-300 motion-reduce:animate-none',
+        styles[state],
+        className,
+      )}
     />
   )
 }

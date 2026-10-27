@@ -11,7 +11,7 @@ import { OrderDot } from './OrderDot'
 
 /** How much of the card is revealed. Concepts appear only when the story reaches them. */
 export type CardDetail = 'named' | 'counts' | 'full'
-export type TrailState = 'now' | 'next'
+export type TrailState = 'past' | 'now' | 'next'
 
 type StationCardProps = {
   station: StationConfig
@@ -24,6 +24,8 @@ type StationCardProps = {
   hasExtraWorker?: boolean
   /** Beat 2: where the one traced order is. Replaces the dots. */
   trail?: TrailState
+  /** Draw a small dot beside the trail text. Off when a floating dot travels over the cards. */
+  trailMarker?: boolean
   /** Outer wrapper style. Motion ownership: later owned by GSAP, static CSS for now. */
   style?: CSSProperties
   className?: string
@@ -55,6 +57,7 @@ export function StationCard({
   emphasis,
   hasExtraWorker = false,
   trail,
+  trailMarker = true,
   style,
   className,
 }: StationCardProps) {
@@ -73,6 +76,8 @@ export function StationCard({
       style={style}
       className={cn(
         'relative flex w-full flex-col rounded-card bg-surface text-ink shadow-card',
+        'transition-[transform,box-shadow] duration-200 ease-out motion-reduce:transition-none',
+        'hover:-translate-y-1 hover:shadow-[0_24px_52px_rgb(35_42_40/0.13)] focus-within:-translate-y-1',
         compact ? 'gap-2.5 p-4' : 'gap-4 p-5 sm:p-6',
         className,
       )}
@@ -90,10 +95,10 @@ export function StationCard({
       </header>
 
       {compact ? null : (
-        <HairlineFigure mount={figure.mount} state={figureState} label={figure.label} className="mx-auto w-full max-w-[300px]" />
+        <HairlineFigure mount={figure.mount} state={figureState} label={figure.label} className="mx-auto w-full max-w-[min(300px,24svh)]" />
       )}
 
-      <div className="flex items-end gap-2">
+      <div data-worker-row className="flex items-end gap-2">
         {Array.from({ length: snapshot.workers }, (_, i) => {
           const isExtra = hasExtraWorker && i === snapshot.workers - 1
           return (
@@ -110,13 +115,24 @@ export function StationCard({
 
       {trail ? (
         <p className="flex items-center gap-2 text-sm text-ink-2">
-          <OrderDot state={trail === 'now' ? 'service' : 'waiting'} className={trail === 'next' ? 'opacity-60' : ''} />
-          {trail === 'now' ? 'Your order is here' : 'Your order comes next'}
+          {trailMarker ? (
+            <OrderDot state={trail === 'next' ? 'waiting' : 'service'} className={trail === 'next' ? 'opacity-60' : ''} />
+          ) : null}
+          {trail === 'now' ? 'Your order is here' : trail === 'past' ? 'Your order has moved on' : 'Your order comes next'}
         </p>
       ) : null}
 
+      {compact && detail === 'named' && !trail ? (
+        <div className="flex flex-col gap-2 border-t border-line pt-3">
+          <div className="flex items-baseline justify-between gap-3">
+            <span className="text-sm text-ink-2">Waiting</span>
+            <span aria-label="not shown yet" className="text-3xl font-semibold leading-none text-line">?</span>
+          </div>
+        </div>
+      ) : null}
+
       {showCounts ? (
-        <div className={cn("flex flex-col border-t border-line", compact ? "gap-2 pt-3" : "gap-3 pt-4")}>
+        <div className={cn("animate-in fade-in-0 slide-in-from-bottom-1 duration-500 motion-reduce:animate-none flex flex-col border-t border-line", compact ? "gap-2 pt-3" : "gap-3 pt-4")}>
           <div className="flex items-baseline justify-between gap-3">
             <span className="text-sm text-ink-2">Waiting</span>
             <span

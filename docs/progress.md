@@ -57,6 +57,30 @@ Last updated: 2026-10-27
 - The interactive controller (`useExperiment`) does not exist yet; the engine supports it (Phase 4).
 - 23 tests pass: 21 simulation, 1 story-copy-versus-engine, 1 App smoke test (plus a station capacity test).
 
-## Next: Phase 3 — Complete the scroll story
+## Phase 3 — Complete the scroll story: DONE (pending a human comprehension check)
 
-Sticky stage, scroll-linked transitions between the seven beats, text reveals, depth and hover effects, reverse scroll, mobile layout, the explicit replay and handoff reset, skip link and reduced-motion routes, then screenshots at opening, rush, reveal and handoff. This is where the motion the user asked for lands.
+- [x] Pinned story (`src/story/StoryExperience.tsx`) on screens at least 1024px wide and 560px tall with motion allowed: one sticky stage, scroll position maps to a beat (`src/story/timeline.ts`, pure and tested). React state changes only on beat, rush-step or traced-stop changes, never per scroll pixel.
+- [x] Scroll drives real content: in the rush beat the simulated clock follows the scroll through 31 engine snapshots (the line visibly grows, dots pop in); in beat 2 one order dot glides between the three cards and the cards say where it has been.
+- [x] Text reveals: headlines slide up word by word from masks and exit the other way when scrolling back (`RevealText`). Supporting lines rise and fade in.
+- [x] Depth and hover: cards on a GSAP-driven arc with perspective, pointer-linked tilt and per-card parallax; cards lift on hover and focus (CSS, on the card, not the GSAP wrapper); Hairline figures answer the pointer; chapter rail with labels on hover and focus.
+- [x] Beat 4 shows the replay explicitly ("Replay the same rush with an extra cashier", a rewind icon turns) and holds back downstream counts so beat 5 can reveal them. Beat 7 rewinds the clock to the start and says "Start of the rush. Paused." while the extra worker steps onto a bench.
+- [x] Reverse scroll restores the same state (unit test on the mapping, and an end-to-end check that the rush clock reads the same going forward and back).
+- [x] Static route (`StoryStatic`) for phones, tablets and `prefers-reduced-motion`: every beat as ordinary sections with all text and states. Pinned mode exposes the story as plain ordered text for screen readers and hides the decorative pane. Keyboard skip link is the first tab stop.
+- [x] Short windows: each scene scales down a little when it would not fit.
+- [x] Screenshots at true size in `docs/screenshots/` (1440x900, plus a 390px opening). Regenerate with `CAPTURE=1 npx playwright test --project=desktop`.
+- [x] Checks: 29 unit tests, 5 end-to-end tests (all seven beats with their words and numbers, reverse scroll, no console errors, no horizontal scroll, skip link by mouse and keyboard, 390px static story, reduced-motion route), typecheck, lint, build.
+
+### Honest notes (Phase 3)
+
+- **The comprehension test has not been done by a person.** This is the gate before Phase 3 can be called finished. Please show the page to someone unfamiliar and ask the four questions in `docs/storyboard.md`.
+- Motion quality has been judged from stills and from tests of end states, not by watching real-time playback. Easing, tempo and the feel of the scroll still need a human look in a normal browser, and the user has asked for a high bar: plan on a refinement pass (Impeccable polish and a Taste visual review are scheduled for Phase 6).
+- Not verified: touch and trackpad momentum behavior, 1024x768 and 1366x768 in a real browser (the fit-to-height scaling was measured in a 1024x700 window: beats 2 to 5 fit, beat 7 was still a few pixels over before the final 30px slack was added and was not re-measured), 200% zoom, a profile of a full scroll pass, memory over repeated passes.
+- The pinned layout depends on viewport height. Below 560px tall, or under 1024px wide, visitors get the static story instead.
+- GSAP's lag smoothing makes animations crawl when a browser pane throttles `requestAnimationFrame`. It is left at its default for visitors. `window.gsap` is exposed in development only, for checks.
+- The old static page is still the mobile experience, so it has none of the pinned motion beyond CSS pop-in on dots and hover lift.
+- Beat 3's replay row and the rewind are timed by beat change, not scrubbed, so they play once per entry.
+- The interactive workspace, Look closer dialogs, worker drag, and playback do not exist yet (Phase 4). The bench in beat 7 is a picture.
+
+## Next: Phase 4 — Unlock the interactive workspace
+
+Reuse the story stage, add scenario selection, clock and playback, reset, live metrics, worker drag and drop with the keyboard and touch alternative, busy-worker transfer display, bounded card focusing, detail dialogs, and a `useExperiment` controller on top of the engine.
