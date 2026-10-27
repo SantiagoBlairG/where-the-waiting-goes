@@ -1,37 +1,35 @@
 /*
  * Design tokens. Single source; see DESIGN.md.
- * Direction (replaces the plan's off-white palette at the client's request): the room changes
- * color as the story does. Butter for the calm morning, tomato as the pressure builds, cobalt
- * for the fix, espresso for the reveal. Paper tickets sit on a counter.
+ * Palette comes from the client's "Earthy Harmony" green reference (mist, sage, sand, forest,
+ * stone) with one warm accent, ember, kept for queues and pressure so it means something when it appears.
  */
 :root {
-  --wg-ink: #1d120d;
-  --wg-ink-2: #5a463a;
-  --wg-paper: #fffaf0;
-  --wg-line: #d9c7ad;
+  --wg-ink: #1b2622;
+  --wg-ink-2: #46554e;
+  --wg-paper: #fbf9f4;
+  --wg-line: #d6d2c8;
 
-  --wg-butter: #ffd84a;
-  --wg-tomato: #ff5a36;
-  --wg-cobalt: #2b3fe0;
-  --wg-espresso: #1d120d;
-  --wg-green: #0e8c5b;
+  --wg-stone: #e2dfda;
+  --wg-mist: #c8ded3;
+  --wg-sage: #88a49a;
+  --wg-sand: #d2c49e;
+  --wg-forest: #386255;
+  --wg-ember: #a8570f; /* text-safe on paper: 4.7:1 */
 
-  /* Text-safe variants on paper */
-  --wg-active: #2b3fe0; /* being made */
-  --wg-active-tint: #e4e8ff;
-  --wg-queue: #c2310f; /* waiting */
-  --wg-queue-tint: #ffe3d9;
-  --wg-green-tint: #d6f3e5;
+  --wg-active: #386255; /* being made, selected, primary */
+  --wg-active-tint: #dcebe3;
+  --wg-queue: #a8570f; /* waiting */
+  --wg-queue-tint: #f6e3c8;
 
-  --wg-radius-card: 22px;
-  --wg-radius-control: 12px;
+  --wg-radius-card: 24px;
+  --wg-radius-control: 14px;
 
-  /* Hairline illustration palette: plate matches the ticket paper, strokes are warm ink tints. */
+  /* Hairline illustration palette: plate is the paper, strokes are green-grey tints. */
   --hairline-plate: var(--wg-paper);
   --hairline-hi: var(--wg-ink);
-  --hairline-edge: #6f5b4d;
-  --hairline-mid: #c3b09a;
-  --hairline-lo: #e4d6c2;
+  --hairline-edge: #5d6f66;
+  --hairline-mid: #b8c4bc;
+  --hairline-lo: #dfe5df;
   --hairline-stroke: 1.2;
 
   /* Spacing scale: 4, 8, 12, 16, 24, 32, 48, 64, 96 */

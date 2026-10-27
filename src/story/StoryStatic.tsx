@@ -1,21 +1,20 @@
 import { useRef, type ReactNode } from 'react'
+import { Info } from 'lucide-react'
 import { CoffeeStage } from '@/components/CoffeeStage'
-import { HairlineFigure } from '@/illustrations/hairline/HairlineFigure'
-import { mountRegister } from '@/illustrations/hairline/registerFigure'
-import { IsoCylinder, IsoFigure } from '@/illustrations/iso'
-import type { Origin } from '@/illustrations/iso-math'
 import { Worker } from '@/illustrations/Worker'
 import { gsap, ScrollTrigger, useGSAP } from '@/lib/gsap'
 import { cn } from '@/lib/utils'
-import { RevealText } from './RevealText'
 import { MODEL_LABEL, SAME_RUSH_LABEL, beats, type Beat, type BeatId } from './storyBeats'
+import { OpeningCard } from './OpeningCard'
+import { RevealText } from './RevealText'
 import { baselineAtClose, baselineMidRush, cashierAtClose, startOfRush } from './storySnapshots'
-import { BEAT_THEMES, RUSH_MID, type RoomTheme } from './theme'
+import { BEAT_THEMES, GLOW_BACKGROUND, RUSH_MID, type RoomTheme } from './theme'
 
 /**
- * The same seven beats as ordinary sections, for phones, tablets and anyone who prefers
- * reduced motion. Every word and every state is here; nothing depends on scroll scrubbing.
- * Each beat keeps its own colored room, counter and coffee-ring stains.
+ * The same seven beats as ordinary sections, for screens narrower than 900px and for anyone
+ * who prefers reduced motion. Every word and every state is here. Each beat keeps its own
+ * calm room, soft glows and coffee-ring stains, and (unless motion is reduced) its own scroll
+ * reveals, so the narrow experience is not a lesser one.
  */
 export function StoryStatic() {
   const byId = Object.fromEntries(beats.map((b, i) => [b.id, { beat: b, theme: BEAT_THEMES[i] }])) as Record<
@@ -26,10 +25,10 @@ export function StoryStatic() {
   return (
     <div>
       <Room {...byId.familiar} first>
-        <OpeningScene />
+        <OpeningCard className="w-full max-w-[460px] self-end" />
         <a
           href="#experiment"
-          className="mt-4 inline-block self-start rounded-control px-1 py-2 text-sm font-semibold underline underline-offset-4 outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+          className="mt-6 inline-block self-start rounded-control px-1 py-2 text-sm font-semibold underline underline-offset-4 outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
         >
           Skip to experiment
         </a>
@@ -56,12 +55,12 @@ export function StoryStatic() {
       </Room>
 
       <Room {...byId['your-turn']} id="experiment" last>
-        <div className="flex flex-col items-stretch gap-6 wide:flex-row wide:items-center">
+        <div className="flex flex-col items-stretch gap-8 wide:flex-row wide:items-center">
           <div className="min-w-0 flex-1">
             <CoffeeStage snapshot={startOfRush} detail="full" />
           </div>
-          <div className="flex shrink-0 flex-row items-center gap-4 self-center rounded-card border-2 border-dashed border-current/50 px-6 py-5 wide:w-40 wide:flex-col wide:py-8">
-            <Worker variant="extra" label="Extra worker, on the bench" className="h-16 text-current" />
+          <div className="flex shrink-0 flex-row items-center gap-5 self-center rounded-card border-2 border-dashed border-current/45 px-7 py-6 wide:w-44 wide:flex-col wide:py-9">
+            <Worker variant="extra" label="Extra worker, on the bench" className="size-16" />
             <p className="text-sm font-semibold wide:text-center">Extra worker</p>
           </div>
         </div>
@@ -80,25 +79,25 @@ function Rings({ className, ring }: { className?: string; ring: 'a' | 'b' }) {
       fill="none"
       stroke="currentColor"
     >
-      <circle r="330" strokeWidth="3" opacity="0.14" />
-      <circle r="300" strokeWidth="14" opacity="0.07" />
-      <circle r="236" strokeWidth="2" opacity="0.12" />
-      <circle r="150" strokeWidth="2" opacity="0.1" />
-      <path d="M-330 0A330 330 0 0 1 -60 -324" strokeWidth="9" opacity="0.18" strokeLinecap="round" />
+      <circle r="330" strokeWidth="3" opacity="0.12" />
+      <circle r="300" strokeWidth="14" opacity="0.06" />
+      <circle r="236" strokeWidth="2" opacity="0.1" />
+      <circle r="150" strokeWidth="2" opacity="0.08" />
+      <path d="M-330 0A330 330 0 0 1 -60 -324" strokeWidth="9" opacity="0.14" strokeLinecap="round" />
     </svg>
   )
 }
 
 type RoomProps = { beat: Beat; theme: RoomTheme; first?: boolean; last?: boolean; id?: string; children: ReactNode }
 
-/** One colored room: headline, the stage standing on a counter, coffee rings and grain behind. */
+/** One calm room: headline, the stage, soft glows and coffee rings behind. */
 function Room({ beat, theme, first, last, id, children }: RoomProps) {
   const headingId = `room-${beat.id}`
   const ref = useRef<HTMLElement>(null)
 
-  // Scroll motion for every width: words rise, tickets are pushed up over the counter, and the
-  // coffee rings drift. Skipped entirely for people who prefer reduced motion. If a room is
-  // already above the viewport (reload mid-page) it shows its final state at once.
+  // Scroll motion for every width: words rise, tickets slide into place, and the coffee rings
+  // drift. Skipped entirely for people who prefer reduced motion. If a room is already above the
+  // viewport (reload mid-page) it shows its final state at once.
   useGSAP(
     () => {
       const mm = gsap.matchMedia()
@@ -126,9 +125,9 @@ function Room({ beat, theme, first, last, id, children }: RoomProps) {
         })
 
         if (cards.length) {
-          const hideCards = () => gsap.set(cards, { autoAlpha: 0, y: 110, rotation: (i: number) => (i - 1) * 3 })
+          const hideCards = () => gsap.set(cards, { autoAlpha: 0, y: 90 })
           const showCards = (instant: boolean) =>
-            gsap.to(cards, { autoAlpha: 1, y: 0, rotation: 0, duration: instant ? 0 : 1, stagger: instant ? 0 : 0.1, ease: 'power4.out', overwrite: 'auto' })
+            gsap.to(cards, { autoAlpha: 1, y: 0, duration: instant ? 0 : 1, stagger: instant ? 0 : 0.1, ease: 'power4.out', overwrite: 'auto' })
           hideCards()
           ScrollTrigger.create({
             trigger: q('figure')[0],
@@ -158,20 +157,20 @@ function Room({ beat, theme, first, last, id, children }: RoomProps) {
       ref={ref}
       id={id}
       aria-labelledby={headingId}
-      className="relative isolate overflow-hidden px-5 pb-28 pt-12 sm:px-10 sm:pt-16 wide:px-[6vw]"
+      className="relative isolate overflow-hidden px-6 pb-24 pt-20 sm:px-12 wide:px-[7vw]"
       style={{ backgroundColor: theme.bg, color: theme.fg }}
     >
+      <div
+        className="absolute inset-0 -z-10"
+        style={{ background: GLOW_BACKGROUND, ['--glow-a' as string]: theme.glowA, ['--glow-b' as string]: theme.glowB }}
+      />
       <div className="pointer-events-none absolute inset-0 -z-10" style={{ color: theme.ring }}>
         <Rings ring="a" className="-right-[30vw] -top-[8vh] w-[110vw] max-w-[900px] wide:-right-[14vw] wide:w-[58vw]" />
         <Rings ring="b" className="-bottom-[20vh] -left-[40vw] w-[100vw] max-w-[760px] wide:-left-[14vw] wide:w-[48vw]" />
       </div>
       <div className="grain pointer-events-none absolute inset-0 -z-10" />
-      <div
-        className="absolute inset-x-0 bottom-0 -z-10 h-24 border-t-[3px] border-white/30"
-        style={{ backgroundColor: theme.counter, boxShadow: '0 -16px 28px -12px rgb(29 18 13 / 0.25)' }}
-      />
 
-      <div className="mx-auto flex max-w-6xl flex-col items-start gap-5">
+      <div className="mx-auto flex max-w-6xl flex-col items-start gap-6">
         <RevealText
           as={first ? 'h1' : 'h2'}
           id={headingId}
@@ -179,49 +178,27 @@ function Room({ beat, theme, first, last, id, children }: RoomProps) {
           className={cn(
             'display text-balance',
             first
-              ? 'max-w-[14ch] text-[clamp(3.1rem,13vw,8.5rem)] leading-[0.9]'
-              : 'max-w-[18ch] text-[clamp(2.5rem,9.5vw,5.4rem)] leading-[0.94]',
+              ? 'max-w-[15ch] text-[clamp(3rem,12vw,8rem)] leading-[0.92]'
+              : 'max-w-[17ch] text-[clamp(2.5rem,9vw,5.2rem)] leading-[0.95]',
           )}
         />
         {beat.support ? (
-          <p data-support className="max-w-[40ch] text-pretty text-lg font-medium sm:text-xl" style={{ color: theme.fg2 }}>
+          <p data-support className="max-w-[38ch] text-pretty text-lg leading-relaxed sm:text-xl" style={{ color: theme.fg2 }}>
             {beat.support}
           </p>
         ) : null}
-        <figure className="m-0 mt-6 flex w-full flex-col">
+        <figure className="m-0 mt-8 flex w-full flex-col">
           <figcaption className="sr-only">{beat.stageDescription}</figcaption>
           {children}
         </figure>
-        {last ? <p className="text-sm opacity-90">{MODEL_LABEL}. Not a forecast for a real café.</p> : null}
+        {last ? (
+          <p className="mt-4 inline-flex items-center gap-2 rounded-full border border-current/25 px-3.5 py-1.5 text-sm font-medium">
+            <Info aria-hidden="true" className="size-4" strokeWidth={2} />
+            {MODEL_LABEL}. Not a forecast for a real café.
+          </p>
+        ) : null}
       </div>
     </section>
-  )
-}
-
-const cupOrigin: Origin = { ox: 40, oy: 56 }
-const idleRegister = { queue: 0, inService: 0 }
-
-function OpeningScene() {
-  return (
-    <div className="flex w-full items-end justify-end gap-3 sm:gap-6">
-      <div className="mb-8 flex flex-col items-center gap-2">
-        <span className="size-7 rounded-full border-[3px] border-paper bg-cobalt shadow-[0_0_0_8px_rgb(43_63_224/0.28)]" />
-        <p className="text-sm font-medium">Your order</p>
-      </div>
-      <HairlineFigure
-        mount={mountRegister}
-        state={idleRegister}
-        label="A café counter with a cash register, a card reader and a receipt slot"
-        className="w-[min(64vw,420px)] shrink-0"
-      />
-      <IsoFigure label="A cup of coffee with a lid, steaming" viewBox="0 0 80 90" className="mb-3 h-auto w-14 shrink-0 text-ink sm:w-20">
-        <IsoCylinder origin={cupOrigin} x={0} y={0} z={0} r={1.1} h={2.4} lid />
-        <g stroke="currentColor" strokeWidth={1.4} strokeLinecap="round" vectorEffect="non-scaling-stroke">
-          <path d="M 34 24 q -4 -5 0 -10 q 4 -5 0 -10" />
-          <path d="M 46 26 q -4 -5 0 -10 q 4 -5 0 -10" />
-        </g>
-      </IsoFigure>
-    </div>
   )
 }
 
@@ -229,18 +206,18 @@ function Compare({ surprise = false }: { surprise?: boolean }) {
   const emphasis = { station: surprise ? ('drinks' as const) : ('order' as const), kind: 'queue' as const }
   const countsAt = surprise ? undefined : (['order'] as const)
   return (
-    <div className="flex w-full flex-col gap-6">
+    <div className="flex w-full flex-col gap-8">
       <p className="text-base">
         <span className="display text-2xl">{SAME_RUSH_LABEL}</span>
         {surprise ? (
           <span className="tabular opacity-90"> Both cafés: {baselineAtClose.completed} picked up, {baselineAtClose.inShop} still in the shop.</span>
         ) : null}
       </p>
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-3">
         <h3 className="font-display text-lg font-bold">Original team</h3>
         <CoffeeStage snapshot={baselineAtClose} detail="counts" compact countsAt={countsAt} emphasis={emphasis} />
       </div>
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-3">
         <h3 className="font-display text-lg font-bold">Replay the same rush with an extra cashier</h3>
         <CoffeeStage snapshot={cashierAtClose} detail="counts" compact extraAt="order" countsAt={countsAt} emphasis={emphasis} />
       </div>

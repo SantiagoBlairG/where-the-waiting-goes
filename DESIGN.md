@@ -70,3 +70,16 @@ This section **supersedes** the colour, type, card and motion decisions above. T
 - **Motion, two moments only:** (1) the room's colour and the rush clock follow the scroll; (2) headlines reveal word by word and tickets are pushed up over the counter when a scene arrives. Tickets answer the pointer with a tilt and a moving glare (compositor-only). No ambient bobbing.
 - **Performance rules:** transform, opacity and background-color only; scenes memoized; glare is a translated gradient, not a repainted one; shadows are static elements, not blur filters; production build is what is judged.
 - **Pinned layout** starts at 900px wide and 520px tall (was 1024 and 560). Narrower screens get the same rooms as ordinary sections, now with scroll reveals, ticket entrances and ring parallax of their own (still none for reduced motion).
+
+## Second design pass, 2026-10-27 (client: "a lot of color", illustration floating, worker icon terrible, active dot weird, cards too close to the bottom, weird footer)
+
+This section supersedes the Redesign section above where they differ.
+
+- **Palette** is now the client's "Earthy Harmony" green reference: stone `#E2DFDA`, mist `#C8DED3`, sage `#88A49A`, sand `#D2C49E`, forest `#386255`, plus ink `#1B2622`, paper `#FBF9F4` and one warm accent, ember `#A8570F`, used only for queues and pressure so it means something. Tokens in `tokens.css`; room themes in `theme.ts`.
+- **Rooms** are calm: stone, mist, stone warming toward sand during the rush (background follows the clock), sage, sand, one forest moment for the reveal, mist again. Two soft colour glows and ring stains give life without weight. Saturated yellow, tomato and cobalt are gone.
+- **Illustration in a card:** the opening picture now sits on a mist pad inside a paper card (`OpeningCard`), like every other illustration. No floating line drawings on the room colour.
+- **Workers** are a round badge with Lucide's `user-round` glyph (ISC licence). The extra worker is a forest badge with a dashed ring.
+- **Active ticket** replaces the floating dot: the ticket the traced order is at lifts 14px, gets a forest outline and a forest label strip ("Your order is here"); tickets already passed get a quiet "Your order has moved on" strip; tickets still to come dim to 72%; the connector arrows darken as the order passes.
+- **Type:** Bricolage Grotesque stays for titles and numbers. Body and UI text is now Plus Jakarta Sans (was Geist).
+- **Space:** roomier padding throughout (tickets 24px sides, bigger numerals, larger gutters). The counter band and the bottom caption are removed; tickets now end 7% of the viewport height above the bottom edge. The simulation note is a small outlined pill at the top right.
+- **References** (the four Pinterest links) could not be read by tooling: Pinterest returns no content to automated fetches. Screenshots of them would let me match their scroll, hover and movement ideas.

@@ -1,34 +1,32 @@
+import { UserRound } from 'lucide-react'
+import { cn } from '@/lib/utils'
+
 type WorkerProps = {
   /** "fixed" belongs to a station. "extra" is the flexible worker the visitor can move. */
   variant?: 'fixed' | 'extra'
   label: string
+  /** Size classes for the round badge, for example "size-12". */
   className?: string
 }
 
 /**
- * Outlined person, deliberately unlike an order dot (a plain filled or ringed circle).
- * The extra worker is drawn in the active color with a dashed outline.
+ * A worker is a round badge with a person glyph (Lucide's "user-round", ISC licence). It is
+ * deliberately not a dot, so a person is never confused with an order. The extra worker is a
+ * green badge with a dashed ring: it can be moved.
  */
 export function Worker({ variant = 'fixed', label, className }: WorkerProps) {
   const extra = variant === 'extra'
   return (
-    <svg
+    <span
       role="img"
       aria-label={label}
-      viewBox="0 0 28 44"
-      className={className}
-      fill="none"
-      stroke={extra ? 'var(--wg-active)' : 'currentColor'}
-      strokeWidth={1.5}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      strokeDasharray={extra ? '3 2.5' : undefined}
+      className={cn(
+        'grid size-10 shrink-0 place-items-center rounded-full',
+        extra ? 'border-2 border-dashed border-forest bg-active-tint text-forest' : 'bg-ink/[0.07] text-ink',
+        className,
+      )}
     >
-      <circle cx="14" cy="9" r="6.5" fill="var(--wg-surface)" />
-      <path
-        d="M 3 42 C 3 31 6 20.5 14 20.5 C 22 20.5 25 31 25 42 Z"
-        fill={extra ? 'var(--wg-active-tint)' : 'var(--wg-surface)'}
-      />
-    </svg>
+      <UserRound aria-hidden="true" className="size-[58%]" strokeWidth={1.75} />
+    </span>
   )
 }

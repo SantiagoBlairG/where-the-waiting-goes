@@ -94,3 +94,16 @@ What was found and fixed:
 ## Next: Phase 4 — Unlock the interactive workspace
 
 Reuse the story stage, add scenario selection, clock and playback, reset, live metrics, worker drag and drop with the keyboard and touch alternative, busy-worker transfer display, bounded card focusing, detail dialogs, and a `useExperiment` controller on top of the engine.
+## Second design pass (2026-10-27)
+
+Done after the client's second round of feedback; details in the "Second design pass" section of `DESIGN.md`.
+
+- [x] Palette from the client's green reference; calm rooms; ember reserved for queues and pressure.
+- [x] Opening illustration inside a card; worker badge from Lucide `user-round`; active-ticket state replaces the floating dot; Plus Jakarta Sans for body text; roomier padding; counter band and footer removed; tickets end 7% of the viewport above the bottom.
+- [x] Designer review fixes: hidden-count tickets centred instead of empty, opening card anchored right, bench no longer steals 24px from the ticket row, "up next" ticket less washed out, stacked illustrations larger on narrow screens.
+- [x] Checks: 29 unit tests, 5 end-to-end tests, typecheck, lint, build. Screenshots in `docs/screenshots/` (1440x900 and 800px wide).
+
+Open items:
+- The four Pinterest references could not be read by tooling; style, scroll, hover and movement ideas from them are not yet applied. Screenshots would fix that.
+- The client's last message was cut off after "Can you"; the request is unknown.
+- Still not checked: touch behaviour, 200% zoom, keyboard pass over the tickets, contrast numbers for every ticket combination, performance profile of the new background glow tween.

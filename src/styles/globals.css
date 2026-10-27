@@ -1,7 +1,7 @@
 @import 'tailwindcss';
 @import 'tw-animate-css';
 @import 'shadcn/tailwind.css';
-@import '@fontsource-variable/geist';
+@import '@fontsource-variable/plus-jakarta-sans';
 @import '@fontsource-variable/bricolage-grotesque/standard.css';
 @import './tokens.css';
 
@@ -15,12 +15,12 @@
   --color-ink-2: var(--wg-ink-2);
   --color-paper: var(--wg-paper);
   --color-line: var(--wg-line);
-  --color-butter: var(--wg-butter);
-  --color-tomato: var(--wg-tomato);
-  --color-cobalt: var(--wg-cobalt);
-  --color-espresso: var(--wg-espresso);
-  --color-green: var(--wg-green);
-  --color-green-tint: var(--wg-green-tint);
+  --color-stone: var(--wg-stone);
+  --color-mist: var(--wg-mist);
+  --color-sage: var(--wg-sage);
+  --color-sand: var(--wg-sand);
+  --color-forest: var(--wg-forest);
+  --color-ember: var(--wg-ember);
   --color-active: var(--wg-active);
   --color-active-tint: var(--wg-active-tint);
   --color-queue: var(--wg-queue);
@@ -54,19 +54,19 @@
   --radius-2xl: calc(var(--radius) * 1.8);
 
   /* Two voices: a quirky, heavy grotesque for headlines and big numbers; a quiet one for small text. */
-  --font-sans: 'Geist Variable', ui-sans-serif, system-ui, sans-serif;
-  --font-display: 'Bricolage Grotesque Variable', 'Geist Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'Plus Jakarta Sans Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Bricolage Grotesque Variable', 'Plus Jakarta Sans Variable', ui-sans-serif, system-ui, sans-serif;
   --font-heading: var(--font-display);
 }
 
 :root {
-  --background: var(--wg-butter);
+  --background: var(--wg-stone);
   --foreground: var(--wg-ink);
   --card: var(--wg-paper);
   --card-foreground: var(--wg-ink);
   --popover: var(--wg-paper);
   --popover-foreground: var(--wg-ink);
-  --primary: var(--wg-cobalt);
+  --primary: var(--wg-forest);
   --primary-foreground: #ffffff;
   --secondary: var(--wg-active-tint);
   --secondary-foreground: var(--wg-ink);
@@ -77,7 +77,7 @@
   --destructive: #b3261e;
   --border: var(--wg-line);
   --input: var(--wg-line);
-  --ring: var(--wg-cobalt);
+  --ring: var(--wg-forest);
   --radius: var(--wg-radius-control);
 }
 
@@ -87,13 +87,13 @@
   }
   html {
     @apply font-sans;
-    background: var(--wg-butter);
+    background: var(--wg-stone);
     color: var(--wg-ink);
   }
   body {
     margin: 0;
     min-height: 100vh;
-    background: var(--wg-butter);
+    background: var(--wg-stone);
     color: var(--wg-ink);
     -webkit-font-smoothing: antialiased;
   }

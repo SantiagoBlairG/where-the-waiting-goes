@@ -1,4 +1,5 @@
 import { memo, useId, useMemo, useRef, type CSSProperties, type PointerEvent } from 'react'
+import { Check } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { capacityPerMinute, type StationConfig, type StationId } from '@/simulation/config'
 import type { StationSnapshot } from '@/simulation/types'
@@ -11,6 +12,7 @@ import { OrderDot } from './OrderDot'
 
 /** How much of the ticket is revealed. Concepts appear only when the story reaches them. */
 export type CardDetail = 'named' | 'counts' | 'full'
+/** Beat 2: where the one traced order is. "now" is the active ticket. */
 export type TrailState = 'past' | 'now' | 'next'
 
 type StationCardProps = {
@@ -22,19 +24,15 @@ type StationCardProps = {
   emphasis?: 'queue' | 'capacity' | 'both'
   /** The last worker here is the flexible extra worker. */
   hasExtraWorker?: boolean
-  /** Beat 2: where the one traced order is. Replaces the dots. */
   trail?: TrailState
-  /** Draw a small dot beside the trail text. Off when a floating dot travels over the tickets. */
-  trailMarker?: boolean
   className?: string
 }
 
-/** Each station has its own color so the three tickets are told apart without reading. */
+/** Each station has its own accent so the three tickets are told apart without reading. */
 const accents: Record<StationId, { numeral: string; bar: string; pad: string }> = {
-  order: { numeral: 'text-cobalt', bar: 'bg-cobalt', pad: 'bg-active-tint' },
-  // Coffee brown, so the drinks ticket stays distinct on the tomato and butter rooms.
-  drinks: { numeral: 'text-[#7a4222]', bar: 'bg-[#7a4222]', pad: 'bg-[#f3e6d6]' },
-  pickup: { numeral: 'text-green', bar: 'bg-green', pad: 'bg-green-tint' },
+  order: { numeral: 'text-forest', bar: 'bg-forest', pad: 'bg-[#d5e6dc]' },
+  drinks: { numeral: 'text-ember', bar: 'bg-ember', pad: 'bg-[#f1e8d2]' },
+  pickup: { numeral: 'text-[#5f8274]', bar: 'bg-sage', pad: 'bg-[#e1ebe6]' },
 }
 
 const figures = {
@@ -102,7 +100,6 @@ function StationCardBase({
   emphasis,
   hasExtraWorker = false,
   trail,
-  trailMarker = true,
   className,
 }: StationCardProps) {
   const headingId = useId()
@@ -118,9 +115,10 @@ function StationCardBase({
   const showCapacity = detail === 'full' && !compact
   const queueEmphasis = (emphasis === 'queue' || emphasis === 'both') && snapshot.queue > 0
   const capacityEmphasis = emphasis === 'capacity' || emphasis === 'both'
+  const active = trail === 'now'
 
   const workers = (
-    <div data-worker-row className="flex items-end gap-1.5">
+    <div data-worker-row className="flex items-center gap-1.5">
       {Array.from({ length: snapshot.workers }, (_, i) => {
         const isExtra = hasExtraWorker && i === snapshot.workers - 1
         return (
@@ -128,7 +126,7 @@ function StationCardBase({
             key={i}
             variant={isExtra ? 'extra' : 'fixed'}
             label={isExtra ? 'Extra worker' : `Worker ${i + 1}`}
-            className={cn('text-ink', compact ? 'h-9' : 'h-10')}
+            className={compact ? 'size-9' : 'size-10'}
           />
         )
       })}
@@ -136,7 +134,7 @@ function StationCardBase({
   )
 
   const dots = (
-    <div aria-hidden="true" className="flex min-h-3.5 flex-wrap items-center gap-1.5">
+    <div aria-hidden="true" className="flex min-h-4 flex-wrap items-center gap-2">
       {Array.from({ length: snapshot.inService }, (_, i) => (
         <OrderDot key={`s${i}`} state="service" />
       ))}
@@ -150,18 +148,21 @@ function StationCardBase({
   const waitingNumber = (
     <span
       className={cn(
-        'display inline-block text-[3.4rem] leading-[0.9] tabular',
-        queueEmphasis ? 'rounded-control bg-queue-tint px-2 py-1 text-queue' : 'text-ink',
+        'display inline-block text-[3.6rem] leading-[0.9] tabular',
+        queueEmphasis ? 'rounded-control bg-queue-tint px-2.5 py-1.5 text-queue' : 'text-ink',
       )}
     >
       {snapshot.queue}
     </span>
   )
 
-  const surface =
-    'relative flex w-full flex-col overflow-hidden bg-paper text-ink outline-none ' +
-    'transition-transform duration-200 ease-out will-change-transform motion-reduce:transition-none ' +
-    '[--ly:0px] hover:[--ly:-6px] focus-within:[--ly:-6px] group'
+  const surface = cn(
+    'group relative flex w-full flex-col overflow-hidden bg-paper text-ink outline-none',
+    'transition-[transform,opacity] duration-300 ease-out will-change-transform motion-reduce:transition-none',
+    active ? '[--ly:-14px] hover:[--ly:-18px]' : '[--ly:0px] hover:[--ly:-6px]',
+    'focus-within:[--ly:-6px]',
+    trail === 'next' && 'opacity-[0.72]',
+  )
 
   const glare = (
     <span
@@ -169,7 +170,7 @@ function StationCardBase({
       className="pointer-events-none absolute left-0 top-0 z-10 size-[560px] opacity-0 transition-opacity duration-200 will-change-transform group-hover:opacity-100"
       style={{
         transform: 'translate3d(calc(var(--gx, 50%) - 280px), calc(var(--gy, 0px) - 280px), 0)',
-        background: 'radial-gradient(closest-side, rgb(255 255 255 / 0.55), transparent)',
+        background: 'radial-gradient(closest-side, rgb(255 255 255 / 0.5), transparent)',
       }}
     />
   )
@@ -182,11 +183,11 @@ function StationCardBase({
           aria-labelledby={headingId}
           {...tiltHandlers}
           style={tiltStyle}
-          className={cn(surface, 'h-full gap-3 rounded-[18px] p-4 pl-5')}
+          className={cn(surface, 'h-full gap-4 rounded-[20px] p-5 pl-7', detail === 'named' && 'justify-center')}
         >
           {glare}
-          <span aria-hidden="true" className={cn('absolute inset-y-0 left-0 w-1.5', accent.bar)} />
-          <div className="flex items-center gap-3">
+          <span aria-hidden="true" className={cn('absolute inset-y-0 left-0 w-2', accent.bar)} />
+          <div className="flex items-center gap-4">
             <span aria-hidden="true" className={cn('display w-10 text-center text-[3.4rem] leading-none', accent.numeral)}>
               {station.step}
             </span>
@@ -194,34 +195,32 @@ function StationCardBase({
               <h3 id={headingId} className="font-display text-lg font-bold leading-tight">
                 {station.name}
               </h3>
-              <div className="mt-1 flex items-center gap-2">
+              <div className="mt-2 flex items-center gap-2.5">
                 {workers}
-                <p className="text-xs text-ink-2">{plural(snapshot.workers, 'worker', 'workers')}</p>
+                <p className="text-sm text-ink-2">{plural(snapshot.workers, 'worker', 'workers')}</p>
               </div>
             </div>
-            {detail === 'named' ? (
-              <div className="flex flex-col items-end gap-1 text-right">
-                <p className="text-xs text-ink-2">Waiting</p>
-                <span aria-label="not shown yet" className="display text-[3.4rem] leading-none text-line">
+            <div className="flex flex-col items-end gap-1 text-right">
+              <p className="text-sm text-ink-2">Waiting</p>
+              {detail === 'named' ? (
+                <span aria-label="not shown yet" className="display text-[3.6rem] leading-[0.9] text-line">
                   ?
                 </span>
-              </div>
-            ) : (
-              <div className="flex flex-col items-end gap-1 text-right">
-                <p className="text-xs text-ink-2">Waiting</p>
-                {waitingNumber}
-              </div>
-            )}
+              ) : (
+                waitingNumber
+              )}
+            </div>
           </div>
-          <div className="mt-auto flex min-h-6 items-center border-t-2 border-dashed border-line pt-2">
-            {detail !== 'named' ? dots : null}
-          </div>
+          {detail !== 'named' ? (
+            <div className="mt-auto flex min-h-7 items-center border-t-2 border-dashed border-line pt-3">{dots}</div>
+          ) : null}
         </article>
       </div>
     )
   }
 
-  const stubHeight = detail === 'full' ? 164 : detail === 'counts' && !trail ? 132 : 92
+  const stubHeight = detail === 'full' ? 184 : detail === 'counts' && !trail ? 148 : 104
+  const headerTop = trail === 'now' || trail === 'past' ? 'pt-14' : 'pt-7'
 
   return (
     <div className={cn('ticket-shadow w-full', className)}>
@@ -235,46 +234,62 @@ function StationCardBase({
         {glare}
         <span aria-hidden="true" className={cn('absolute inset-x-0 top-0 h-2', accent.bar)} />
 
-        <header className="flex items-center gap-3 px-5 pb-1 pt-5">
-          <span aria-hidden="true" className={cn('display text-[3.6rem] leading-[0.85]', accent.numeral)}>
+        {/* Active state: the ticket the traced order is at is lifted, outlined and labelled. */}
+        {trail === 'now' ? (
+          <>
+            <span aria-hidden="true" className="pointer-events-none absolute inset-0 z-20 rounded-card border-[3px] border-forest" />
+            <p className="absolute inset-x-0 top-0 z-10 flex h-10 items-center gap-2 bg-forest px-6 text-sm font-semibold text-paper">
+              <span aria-hidden="true" className="size-2.5 rounded-full bg-paper" />
+              Your order is here
+            </p>
+          </>
+        ) : trail === 'past' ? (
+          <p className="absolute inset-x-0 top-0 z-10 flex h-10 items-center gap-2 bg-sage/35 px-6 text-sm font-semibold text-ink-2">
+            <Check aria-hidden="true" className="size-4" strokeWidth={2.5} />
+            Your order has moved on
+          </p>
+        ) : null}
+
+        <header className={cn('flex items-center gap-4 px-6 pb-2', headerTop)}>
+          <span aria-hidden="true" className={cn('display text-[3.8rem] leading-[0.85]', accent.numeral)}>
             {station.step}
           </span>
-          <h3 id={headingId} className="font-display text-xl font-bold leading-[1.05]">
+          <h3 id={headingId} className="font-display text-[1.4rem] font-bold leading-[1.05]">
             {station.name}
           </h3>
         </header>
 
-        <div className={cn('relative mx-3.5 mb-3 mt-2 overflow-hidden rounded-[18px]', accent.pad)}>
+        <div className={cn('relative mx-5 mb-4 mt-2 overflow-hidden rounded-[20px]', accent.pad)}>
           <HairlineFigure
             mount={figure.mount}
             state={figureState}
             label={figure.label}
-            className="relative z-[1] mx-auto w-full max-w-[min(310px,27svh)]"
+            className="relative z-[1] mx-auto w-full max-w-[320px] wide:max-w-[min(320px,27svh)]"
           />
           <span
             aria-hidden="true"
-            className="absolute inset-x-[18%] bottom-[7%] h-[9%] bg-[radial-gradient(closest-side,rgb(29_18_13/0.22),transparent)]"
+            className="absolute inset-x-[18%] bottom-[7%] h-[9%] bg-[radial-gradient(closest-side,rgb(27_38_34/0.2),transparent)]"
           />
         </div>
 
         <div
-          className="flex flex-col justify-between border-t-2 border-dashed border-line px-5 pb-4 pt-3"
+          className="flex flex-col justify-between border-t-2 border-dashed border-line px-6 pb-5 pt-4"
           style={{ height: stubHeight }}
         >
           <div className="flex items-end justify-between gap-3">
             {showCounts ? (
               <div className="flex flex-col gap-1">
-                <span className="text-sm text-ink-2">Waiting</span>
+                <span className="text-sm font-medium text-ink-2">Waiting</span>
                 {waitingNumber}
               </div>
             ) : (
-              <p className="text-sm text-ink-2">
-                {trail === 'now' ? 'Your order is here' : trail === 'past' ? 'Your order has moved on' : 'Your order comes next'}
+              <p className="text-sm font-medium text-ink-2">
+                {trail === 'next' ? 'Next stop' : trail === 'past' ? 'Done here' : 'The order stops here'}
               </p>
             )}
-            <div className="flex flex-col items-end gap-1">
+            <div className="flex flex-col items-end gap-1.5">
               {workers}
-              <p className="text-xs text-ink-2">{plural(snapshot.workers, 'worker', 'workers')}</p>
+              <p className="text-xs font-medium text-ink-2">{plural(snapshot.workers, 'worker', 'workers')}</p>
             </div>
           </div>
           {showCounts ? (
@@ -284,8 +299,8 @@ function StationCardBase({
                 {showCapacity ? (
                   <span
                     className={cn(
-                      'whitespace-nowrap rounded-full px-2.5 py-1 text-sm font-semibold tabular',
-                      capacityEmphasis ? 'bg-active-tint text-active' : 'bg-line/40 text-ink',
+                      'whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-semibold tabular',
+                      capacityEmphasis ? 'bg-active-tint text-active' : 'bg-line/50 text-ink',
                     )}
                   >
                     {capacity % 1 === 0 ? capacity : capacity.toFixed(1)} orders/min
@@ -293,13 +308,11 @@ function StationCardBase({
                 ) : (
                   <span />
                 )}
-                <p className={cn('text-sm', queueEmphasis ? 'font-semibold text-queue' : 'text-ink-2')}>
+                <p className={cn('text-sm font-medium', queueEmphasis ? 'text-queue' : 'text-ink-2')}>
                   {statusFor(snapshot)}
                 </p>
               </div>
             </>
-          ) : trailMarker && trail ? (
-            <OrderDot state={trail === 'next' ? 'waiting' : 'service'} />
           ) : null}
         </div>
       </article>
