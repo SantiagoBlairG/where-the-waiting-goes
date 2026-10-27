@@ -3,6 +3,7 @@
 @import 'shadcn/tailwind.css';
 @import '@fontsource-variable/plus-jakarta-sans';
 @import '@fontsource-variable/bricolage-grotesque/standard.css';
+@import '@fontsource/instrument-serif/400-italic.css';
 @import './tokens.css';
 
 /* The pinned layout and the three-across ticket row start at 900px. */
@@ -100,13 +101,21 @@
   .tabular {
     font-variant-numeric: tabular-nums;
   }
-  /* Headline voice: condensed, heavy, tight. */
+  /* Headline voice: medium weight, large, tightly tracked. One word per headline switches to the serif. */
   .display {
     font-family: var(--font-display);
-    font-weight: 800;
-    font-stretch: 84%;
+    font-weight: 600;
+    font-stretch: 96%;
     font-variation-settings: 'opsz' 96;
-    letter-spacing: -0.018em;
+    letter-spacing: -0.022em;
+  }
+  .accent-serif {
+    font-family: 'Instrument Serif', Georgia, serif;
+    font-style: italic;
+    font-weight: 400;
+    font-stretch: 100%;
+    letter-spacing: -0.01em;
+    font-size: 1.1em;
   }
   /* Mask for revealed words: clips the slide, with room for ascenders and descenders. */
   .word-mask {
@@ -148,7 +157,7 @@
   inset: 10px 8px 0;
   border-radius: var(--wg-radius-card);
   box-shadow:
-    0 2px 3px rgb(29 18 13 / 0.2),
-    0 24px 30px -8px rgb(29 18 13 / 0.34);
+    0 1px 2px rgb(29 18 13 / 0.08),
+    0 18px 28px -14px rgb(29 18 13 / 0.2);
   pointer-events: none;
 }

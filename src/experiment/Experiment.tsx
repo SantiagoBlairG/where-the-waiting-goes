@@ -129,7 +129,7 @@ export function Experiment() {
       ref={section}
       id="experiment"
       aria-labelledby="experiment-heading"
-      className="relative isolate overflow-x-clip px-6 py-24 sm:px-12 wide:px-[7vw]"
+      className="relative isolate -mt-10 overflow-x-clip rounded-t-[40px] px-6 py-24 sm:px-12 wide:px-[7vw]"
       style={{ backgroundColor: ROOM.bg, color: ROOM.fg }}
     >
       {/* Background layers are clipped on their own so the sticky run bar is not. */}

@@ -195,3 +195,7 @@ Housekeeping: `docs/qa/` (generated screenshots, about 56 MB) is git-ignored; `d
 ## Next: Phase 6 — Refinement and verification (remaining)
 
 Impeccable adapt, harden, audit, optimize, then polish; a Taste visual review without restarting the design; remove effects that distract from the process; verify accessibility, model correctness, responsive layout and lifecycle; clean install, typecheck, lint, tests, end-to-end tests and a production build.
+
+## Style pass from the fixaplan.com reference (2026-10-27)
+
+Done: serif italic accent words, lighter headline type, floating pill nav (skip link kept first), rounded overlapping sheets, flat cards. Verified on the production build: typecheck, lint, 63 unit tests, 52 end-to-end passes (14 skipped by design), axe 0 violations, contrast audit no fails (249 styles), keyboard walk passes, layout sweep clean at 1440x900, 1100x700, 390x844 and 320x640. The sweep ignores the opaque nav as an overlay, like the run bar; scrolling text passes under it by design. Not done: scroll-triggered stat bars, a photo hero, a dark finale; real sticky stacking of the pinned story's sheets (only the overlap is in). Not re-run since this pass: perf script.

@@ -157,7 +157,7 @@ function Room({ beat, theme, first, last, id, children }: RoomProps) {
       ref={ref}
       id={id}
       aria-labelledby={headingId}
-      className="relative isolate overflow-hidden px-6 pb-24 pt-20 sm:px-12 wide:px-[7vw]"
+      className="relative isolate -mt-10 overflow-hidden rounded-t-[40px] px-6 pb-24 pt-28 first:mt-0 first:rounded-t-none sm:px-12 wide:px-[7vw]"
       style={{ backgroundColor: theme.bg, color: theme.fg }}
     >
       <div
@@ -175,6 +175,7 @@ function Room({ beat, theme, first, last, id, children }: RoomProps) {
           as={first ? 'h1' : 'h2'}
           id={headingId}
           text={beat.headline}
+          accent={beat.accent}
           className={cn(
             'display text-balance',
             first

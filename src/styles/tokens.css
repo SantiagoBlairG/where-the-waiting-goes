@@ -21,7 +21,7 @@
   --wg-queue: #a8570f; /* waiting */
   --wg-queue-tint: #f6e3c8;
 
-  --wg-radius-card: 24px;
+  --wg-radius-card: 32px;
   --wg-radius-control: 14px;
 
   /* Hairline illustration palette: plate is the paper, strokes are green-grey tints. */

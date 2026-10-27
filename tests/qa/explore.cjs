@@ -44,7 +44,9 @@ function pageChecks() {
       const a = boxes[i], b = boxes[j]
       if (a.el.contains(b.el) || b.el.contains(a.el)) continue
       // The floating run bar is an overlay by design: check its own contents, not what scrolls beneath it.
-      const barA = !!a.el.closest('#run-controls'), barB = !!b.el.closest('#run-controls')
+      // The same goes for the floating page nav, which is fully opaque.
+      const overlay = '#run-controls, nav[aria-label="Page"]'
+      const barA = !!a.el.closest(overlay), barB = !!b.el.closest(overlay)
       if (barA !== barB) continue
       // Words of one headline, or the digits and label of one clock, are laid out together on purpose.
       const ga = a.el.closest('[data-text], [data-clock], h1, h2, h3')

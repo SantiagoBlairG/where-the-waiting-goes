@@ -83,3 +83,13 @@ This section supersedes the Redesign section above where they differ.
 - **Type:** Bricolage Grotesque stays for titles and numbers. Body and UI text is now Plus Jakarta Sans (was Geist).
 - **Space:** roomier padding throughout (tickets 24px sides, bigger numerals, larger gutters). The counter band and the bottom caption are removed; tickets now end 7% of the viewport height above the bottom edge. The simulation note is a small outlined pill at the top right.
 - **References** (the four Pinterest links) could not be read by tooling: Pinterest returns no content to automated fetches. Screenshots of them would let me match their scroll, hover and movement ideas.
+
+## Third design pass, 2026-10-27 (client reference: fixaplan.com)
+
+Structure and feel taken from the reference, with our green palette kept (client's choice).
+
+- **Type:** Bricolage Grotesque headlines are now medium weight (600), near-normal width, tracking -0.022em. One word or phrase per headline switches to Instrument Serif italic (`accent` in `storyBeats.ts`, `.accent-serif`), the same device the reference uses. Body stays Plus Jakarta Sans.
+- **Floating pill nav** (`SiteNav`): centred at the top, opaque paper, brand link plus a "Try it" button. The skip link is first in tab order, ahead of it. Pinned headlines moved down to clear it.
+- **Sheets:** the plain-layout rooms and the experiment are rounded-top (40px) sheets that overlap the one before by 40px, so each slides up over the previous.
+- **Cards:** flat rounded cards (32px radius). The ticket notches, coloured top bar and dashed perforation are gone; a hairline rule and a softer shadow remain.
+- **Scroll:** native scrolling kept (no Lenis; smooth-scroll hijacking is out of scope). Not done: stat bars filling over a photo, a full-bleed dark finale, a photo hero.

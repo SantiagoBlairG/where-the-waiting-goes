@@ -217,7 +217,7 @@ function StationCardBase({
           aria-labelledby={headingId}
           {...tiltHandlers}
           style={tiltStyle}
-          className={cn(surface, 'h-full gap-3 rounded-[20px] p-4 pl-6', detail === 'named' && 'justify-center')}
+          className={cn(surface, 'h-full gap-3 rounded-[24px] p-4 pl-6', detail === 'named' && 'justify-center')}
         >
           {glare}
           <span aria-hidden="true" className={cn('absolute inset-y-0 left-0 w-2', accent.bar)} />
@@ -247,7 +247,7 @@ function StationCardBase({
             </div>
           </div>
           {detail !== 'named' ? (
-            <div className="mt-auto flex min-h-7 items-center border-t-2 border-dashed border-line pt-3">{dots}</div>
+            <div className="mt-auto flex min-h-7 items-center border-t border-line pt-3">{dots}</div>
           ) : null}
         </article>
       </div>
@@ -264,11 +264,9 @@ function StationCardBase({
         aria-labelledby={headingId}
         {...tiltHandlers}
         style={{ ...tiltStyle, ['--notch-y' as string]: `calc(100% - ${stubHeight}px)` }}
-        className={cn(surface, 'ticket rounded-card')}
+        className={cn(surface, 'rounded-card')}
       >
         {glare}
-        <span aria-hidden="true" className={cn('absolute inset-x-0 top-0 h-2', accent.bar)} />
-
         {/* Active state: the ticket the traced order is at is lifted, outlined and labelled. */}
         {trail === 'now' ? (
           <>
@@ -332,7 +330,7 @@ function StationCardBase({
         ) : null}
 
         <div
-          className="flex flex-col justify-between border-t-2 border-dashed border-line px-6 pb-5 pt-4"
+          className="flex flex-col justify-between border-t border-line px-6 pb-5 pt-4"
           style={{ height: stubHeight }}
         >
           <div className="flex items-end justify-between gap-3">

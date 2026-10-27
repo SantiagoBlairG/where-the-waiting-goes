@@ -262,13 +262,6 @@ export function StoryExperience() {
 
   return (
     <div ref={root}>
-      <a
-        href="#experiment"
-        className="fixed left-4 top-4 z-50 -translate-y-20 rounded-control bg-paper px-4 py-2 text-sm font-semibold text-forest shadow-lg outline-none focus-visible:translate-y-0 focus-visible:ring-3 focus-visible:ring-ring/50"
-      >
-        Skip to experiment
-      </a>
-
       {/* The story as plain, ordered text for assistive technology. The pinned stage is decorative. */}
       <div className="sr-only">
         {beats.map((b, i) => (
@@ -438,11 +431,12 @@ const TextGroups = memo(function TextGroups() {
           key={b.id}
           data-text={i}
           style={{ opacity: i === 0 ? 1 : 0, visibility: i === 0 ? 'visible' : 'hidden', left: GUTTER, right: GUTTER }}
-          className="absolute top-[clamp(28px,6svh,92px)] flex flex-col items-start gap-[clamp(12px,2.4svh,24px)]"
+          className="absolute top-[clamp(72px,10svh,120px)] flex flex-col items-start gap-[clamp(12px,2.4svh,24px)]"
         >
           <RevealText
             as="p"
             text={b.headline}
+            accent={b.accent}
             className={cn(
               'display text-balance',
               i === 0

@@ -17,8 +17,7 @@ export const OpeningCard = memo(function OpeningCard({ className }: { className?
   return (
     <div className={cn('ticket-shadow shrink-0', className)}>
       <div className="relative flex flex-col gap-4 overflow-hidden rounded-card bg-paper p-5 text-ink">
-        <span aria-hidden="true" className="absolute inset-x-0 top-0 h-2 bg-forest" />
-        <div className="flex items-center justify-between pt-2">
+        <div className="flex items-center justify-between pt-1">
           <span className="display text-[3.4rem] leading-[0.85] text-forest tabular">8:45</span>
           <span className="inline-flex items-center gap-2.5 rounded-full bg-active-tint px-4 py-2 text-sm font-semibold text-forest">
             <OrderDot state="service" />
