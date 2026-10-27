@@ -176,7 +176,7 @@ The exit test is that a visitor can explain why an extra cashier and an extra ba
 
 Not done or not checked: a person has not yet been asked whether they can explain the difference from the page alone (the comprehension gate). Contrast numbers for the new panels, 200% zoom and a performance profile of the full workspace are still unchecked.
 
-## Phase 6 — started: self-testing with the playwright-skill (2026-10-28)
+## Phase 6 — started: self-testing with the playwright-skill (2026-10-27)
 
 The client asked me to test the site myself with the Playwright skill (github.com/lackeyjb/playwright-skill, MIT, installed per project in `.claude/skills/playwright-skill`; its setup downloaded a headless Chromium). Scripts live in `tests/qa/` (`.cjs`, because the project is ES modules) and run with `npm run qa:layout | qa:a11y | qa:contrast | qa:keyboard | qa:perf` against the production server (`npm run serve`, port 4173). They run headless; the skill defaults to a visible browser, which I did not use. See `tests/qa/README.md`.
 

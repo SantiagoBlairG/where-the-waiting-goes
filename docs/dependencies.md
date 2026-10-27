@@ -45,7 +45,6 @@ Recorded 2026-10-27. Reproduce with `npm ci` on Node 24. `package-lock.json` is 
 | hairline-create, hairline-adopt | github.com/lucasmarkes/hairline | 37d2e78dcb (2026-10-14) | `npx skills add lucasmarkes/hairline` |
 | impeccable | github.com/pbakaus/impeccable | d34c87e1a0 (2026-10-27), skill 4.8.0, engine 0.1.18 | `npx impeccable install --providers=claude --scope=project` |
 | playwright-cli | github.com/microsoft/playwright-cli | b1a5903c5b (2026-10-19), CLI 0.1.22 | `npm i -g @playwright/cli` then `playwright-cli install --skills` |
-
 | playwright-skill | github.com/lackeyjb/playwright-skill (MIT) | 5.0.0 | `npx skills add lackeyjb/playwright-skill --skill playwright-skill -a claude-code -y --copy`, then `npm run setup` inside the skill folder (installs its own Playwright and a headless Chromium) |
 
 Dev dependency added for the accessibility audit: `axe-core` 4.14.0 (MPL-2.0).
