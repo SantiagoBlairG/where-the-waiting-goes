@@ -170,3 +170,90 @@ test.describe('dragging the extra worker', () => {
     await expect(section.getByRole('article', { name: 'Make drinks' })).toContainText('1 worker')
   })
 })
+
+test.describe('focus rail and run bar', () => {
+  test('the rail starts on Make drinks, and the arrow keys move focus within its bounds', async ({ page }) => {
+    const section = await open(page)
+    const slider = section.getByRole('slider', { name: 'Focus station' })
+    await expect(slider).toHaveAttribute('aria-valuetext', 'Make drinks')
+    await slider.focus()
+    await page.keyboard.press('ArrowRight')
+    await expect(slider).toHaveAttribute('aria-valuetext', 'Pick up')
+    await page.keyboard.press('ArrowRight') // bounded: no wrap-around
+    await expect(slider).toHaveAttribute('aria-valuetext', 'Pick up')
+    await page.keyboard.press('Home')
+    await expect(slider).toHaveAttribute('aria-valuetext', 'Order & pay')
+    await page.keyboard.press('ArrowLeft')
+    await expect(slider).toHaveAttribute('aria-valuetext', 'Order & pay')
+    // The insight follows the focus.
+    await expect(section.locator('[data-rail-card="0"]')).toContainText('What this setup means')
+    await expect(section.locator('[data-rail-card="1"]')).not.toContainText('What this setup means')
+  })
+
+  test('clicking a station name, and the previous and next buttons, change focus', async ({ page }) => {
+    const section = await open(page)
+    const slider = section.getByRole('slider', { name: 'Focus station' })
+    await section.getByRole('button', { name: 'Pick up', exact: true }).click()
+    await expect(slider).toHaveAttribute('aria-valuetext', 'Pick up')
+    await expect(section.getByRole('button', { name: 'Focus the next station' })).toBeDisabled()
+    await section.getByRole('button', { name: 'Focus the previous station' }).click()
+    await expect(slider).toHaveAttribute('aria-valuetext', 'Make drinks')
+  })
+})
+
+test.describe('focus rail dragging and the arc', () => {
+  test.skip(({ isMobile }) => isMobile, 'the arc and the rail handle drag are for wide screens')
+
+  test('dragging the handle to either end snaps to that station', async ({ page }) => {
+    const section = await open(page)
+    const slider = section.getByRole('slider', { name: 'Focus station' })
+    const thumb = (await slider.boundingBox())!
+    const trackBox = (await slider.locator('xpath=..').boundingBox())!
+    await page.mouse.move(thumb.x + thumb.width / 2, thumb.y + thumb.height / 2)
+    await page.mouse.down()
+    await page.mouse.move(trackBox.x + trackBox.width - 4, thumb.y + thumb.height / 2, { steps: 12 })
+    await page.mouse.up()
+    await expect(slider).toHaveAttribute('aria-valuetext', 'Pick up')
+    const t2 = (await slider.boundingBox())!
+    await page.mouse.move(t2.x + t2.width / 2, t2.y + t2.height / 2)
+    await page.mouse.down()
+    await page.mouse.move(trackBox.x + 4, t2.y + t2.height / 2, { steps: 12 })
+    await page.mouse.up()
+    await expect(slider).toHaveAttribute('aria-valuetext', 'Order & pay')
+  })
+
+  test('the tickets lean away from the focused one and settle when focus moves', async ({ page }) => {
+    const section = await open(page)
+    const matrix = (i: number) => section.locator(`[data-rail-card="${i}"]`).evaluate((el) => getComputedStyle(el).transform)
+    const identity = ['none', 'matrix(1, 0, 0, 1, 0, 0)']
+    await page.waitForTimeout(700)
+    expect(await matrix(1)).not.toBe('none') // the middle one sits level, with perspective
+    expect(await matrix(0)).not.toBe(await matrix(2)) // the outer two lean opposite ways
+    expect(identity).not.toContain(await matrix(0))
+    await section.getByRole('button', { name: 'Pick up', exact: true }).click()
+    await page.waitForTimeout(800)
+    const focusedY = await section.locator('[data-rail-card="2"]').evaluate((el) => (el as HTMLElement).style.transform)
+    expect(focusedY).not.toContain('rotateY(-') // the focused ticket has no lean
+  })
+})
+
+test.describe('the run bar stays in reach', () => {
+  test('Play, Restart and the clock stay on screen while you scroll through the workspace', async ({ page }) => {
+    const section = await open(page)
+    await page.evaluate(() => document.getElementById('experiment-heading')!.scrollIntoView())
+    await expect(section.getByRole('button', { name: 'Play' })).toBeInViewport()
+    await expect(section.getByRole('button', { name: 'Restart this setup' })).toBeInViewport()
+    await expect(section.locator('output')).toBeInViewport()
+    await page.evaluate(() => window.scrollBy(0, 700))
+    await expect(section.getByRole('button', { name: 'Play' })).toBeInViewport()
+    await section.getByRole('button', { name: 'Play' }).click()
+    await expect.poll(async () => seconds(await section.locator('output').innerText())).toBeGreaterThan(3)
+  })
+
+  test('the skip link jumps to the run controls', async ({ page }) => {
+    const section = await open(page)
+    await section.getByRole('link', { name: 'Skip to run controls' }).focus()
+    await page.keyboard.press('Enter')
+    await expect(section.getByRole('group', { name: 'Run controls' })).toBeInViewport()
+  })
+})

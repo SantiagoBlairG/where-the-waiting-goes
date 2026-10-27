@@ -146,6 +146,13 @@ Gaps against plan.md §8, stated plainly:
 - **Handoff:** the pinned story's last beat rewinds the clock, then the workspace follows below as its own section starting at 0:00, paused. It is not the same stage "settling in place".
 - Contrast numbers, 200% zoom, and a performance profile of a full run are still unchecked.
 
+## Phase 4 gaps closed (2026-10-27)
+
+- **Focus rail** (`FocusRail.tsx`): a dedicated handle on a three-stop rail (6px movement threshold), bounded with no wrap-around, snapping to the nearest stop on release; arrow keys, Home and End on the handle (it is a labelled slider), Previous and Next buttons, and clickable station names. The rail freezes while the extra worker is being dragged. The workspace tickets now sit on the story's shallow arc: they lean away from the focused ticket (4 degrees a step, outer tickets 12px lower) and the lean follows the handle while it is dragged and settles on release. Default focus is Make drinks so the arc is symmetric; the insight under the focused ticket follows the focus.
+- **Run bar**: Play/Pause, Restart this setup, the clock and the speed choice now live in one bar that sticks to the bottom of the screen while the workspace is in view, at every screen size (previously Play sat far below the tickets on phones). It is the only copy of those controls, so there are no duplicate buttons. A skip link ("Skip to run controls") jumps to it, because it is last in the page order.
+- Tests added: rail keyboard and bounds, clicking a station name, Previous and Next, dragging the handle to both ends, the arc leaning and settling, Play and Restart staying in view while scrolling, and the skip link. 29 desktop end-to-end tests pass (14 intentionally skipped on the phone emulation, 15 pass there).
+- Still not covered by an automated test: the rail freezing during a worker drag, touch dragging of the rail handle, and the arc under reduced motion.
+
 ## Next: Phase 5 — Comparisons and explanations
 
 Mostly present already (full-run comparison, insights, order journeys, methodology). Remaining: check that detail is revealed progressively, add an explanation of fixed demand and the emerging ordering constraint (why an extra barista leaves a line at the register), and make the cashier-versus-barista comparison explanation explicit.

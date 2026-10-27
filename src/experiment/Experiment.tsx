@@ -1,8 +1,9 @@
-import { Fragment, useEffect, useRef, useState } from 'react'
-import { ChevronLeft, ChevronRight, Info, Pause, Play, RotateCcw } from 'lucide-react'
+import { Fragment, useCallback, useEffect, useRef, useState } from 'react'
+import { Info, Pause, Play, RotateCcw } from 'lucide-react'
 import { OrderDot } from '@/components/OrderDot'
 import { StationCard } from '@/components/StationCard'
 import { Button } from '@/components/ui/button'
+import { gsap } from '@/lib/gsap'
 import { GLOW_BACKGROUND } from '@/story/theme'
 import { cn } from '@/lib/utils'
 import { ORDER_COUNT, STATIONS, type StationId } from '@/simulation/config'
@@ -11,6 +12,7 @@ import { meanSoFarSeconds } from '@/simulation/metrics'
 import type { ExtraPlacement } from '@/simulation/types'
 import { ComparisonPanel } from './ComparisonPanel'
 import { Dialogs, type DialogState } from './Dialogs'
+import { FocusRail } from './FocusRail'
 import { PLACEMENTS, activeWorkers, capacityIfExtraAt, insightFor, mmss, placementLabel } from './helpers'
 import { useExperiment } from './useExperiment'
 import { WorkerBench } from './WorkerBench'
@@ -22,31 +24,75 @@ const SCENARIO_NOTES: Record<PresetId, string> = {
 }
 
 const ROOM = { bg: '#c8ded3', fg: '#1b2622', fg2: '#3c4d46', glowA: 'rgba(226,223,218,0.8)', glowB: 'rgba(136,164,154,0.45)' }
+const STATION_NAMES = STATIONS.map((s) => s.name)
+/** How strongly the outer tickets lean away from the focused one, in degrees per step. */
+const LEAN = 4
+const DROP = 12
 
 /**
  * The interactive workspace. The visitor picks a setup or moves the one extra worker, plays the
  * same rush and watches the numbers. Everything on screen is read from the simulation session.
  * Dragging, the "Assign extra worker" control and the setup chooser all reach the same actions,
- * so keyboard and touch visitors can do everything a mouse can.
+ * so keyboard and touch visitors can do everything a mouse can. The run controls live in a bar
+ * that stays at the bottom of the screen while the workspace is in view, so Play is always close.
+ *
+ * Motion ownership: each ticket's wrapper ([data-rail-card]) is moved by GSAP (the arc, which
+ * follows the focus rail); the ticket inside only reacts to the pointer through CSS.
  */
 export function Experiment() {
   const { view, announcement, actions } = useExperiment()
   const { snapshot } = view
-  const [focus, setFocus] = useState<StationId>('order')
+  const [focusIndex, setFocusIndex] = useState(1)
   const [dragging, setDragging] = useState(false)
   const [dropTarget, setDropTarget] = useState<ExtraPlacement | null>(null)
   const [dialog, setDialog] = useState<DialogState>(null)
   const [showComparison, setShowComparison] = useState(false)
   const section = useRef<HTMLElement>(null)
   const opener = useRef<HTMLElement | null>(null)
+  const lean = useRef({ f: 1 })
+  const focus = STATIONS[focusIndex].id
+
+  // The arc: tickets lean toward the focused one and the outer ones sit a little lower. Wide screens only.
+  const applyArc = useCallback((position: number) => {
+    const wide = window.matchMedia('(min-width: 900px)').matches
+    gsap.utils.toArray<HTMLElement>('#experiment [data-rail-card]').forEach((el, i) => {
+      if (!wide) {
+        gsap.set(el, { clearProps: 'transform' })
+        return
+      }
+      gsap.set(el, { transformPerspective: 1400, rotationY: (position - i) * LEAN, y: Math.abs(position - i) * DROP })
+    })
+  }, [])
+
+  useEffect(() => {
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    gsap.killTweensOf(lean.current)
+    gsap.to(lean.current, {
+      f: focusIndex,
+      duration: reduce ? 0 : 0.5,
+      ease: 'power3.out',
+      onUpdate: () => applyArc(lean.current.f),
+      onComplete: () => applyArc(focusIndex),
+    })
+    if (reduce) applyArc(focusIndex)
+  }, [focusIndex, applyArc])
+
+  useEffect(() => {
+    const onResize = () => applyArc(lean.current.f)
+    window.addEventListener('resize', onResize)
+    return () => window.removeEventListener('resize', onResize)
+  }, [applyArc])
 
   // Scrolling back up into the story pauses the run and keeps it; Play resumes it. Nothing resets.
   useEffect(() => {
     const el = section.current
     if (!el) return
-    const observer = new IntersectionObserver(([entry]) => {
-      if (!entry.isIntersecting) actions.pause()
-    }, { threshold: 0.02 })
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting) actions.pause()
+      },
+      { threshold: 0.02 },
+    )
     observer.observe(el)
     return () => observer.disconnect()
   }, [actions])
@@ -63,7 +109,6 @@ export function Experiment() {
 
   const extra = snapshot.extraWorker
   const destination = extra.pending ?? extra.at
-  const focusIndex = STATIONS.findIndex((s) => s.id === focus)
   const orders = actions.orders()
   const average = meanSoFarSeconds(orders)
   const running = view.mode === 'running'
@@ -83,15 +128,21 @@ export function Experiment() {
       ref={section}
       id="experiment"
       aria-labelledby="experiment-heading"
-      className="relative isolate overflow-hidden px-6 py-24 sm:px-12 wide:px-[7vw]"
+      className="relative isolate px-6 py-24 sm:px-12 wide:px-[7vw]"
       style={{ backgroundColor: ROOM.bg, color: ROOM.fg }}
     >
-      <div
-        aria-hidden="true"
-        className="absolute inset-0 -z-10"
-        style={{ background: GLOW_BACKGROUND, ['--glow-a' as string]: ROOM.glowA, ['--glow-b' as string]: ROOM.glowB }}
-      />
-      <div aria-hidden="true" className="grain pointer-events-none absolute inset-0 -z-10" />
+      {/* Background layers are clipped on their own so the sticky run bar is not. */}
+      <div aria-hidden="true" className="absolute inset-0 -z-10 overflow-hidden">
+        <div className="absolute inset-0" style={{ background: GLOW_BACKGROUND, ['--glow-a' as string]: ROOM.glowA, ['--glow-b' as string]: ROOM.glowB }} />
+        <div className="grain pointer-events-none absolute inset-0" />
+      </div>
+
+      <a
+        href="#run-controls"
+        className="absolute left-4 top-4 z-50 -translate-y-20 rounded-control bg-paper px-4 py-2 text-sm font-semibold text-forest shadow-lg outline-none focus-visible:translate-y-0 focus-visible:ring-3 focus-visible:ring-ring/50"
+      >
+        Skip to run controls
+      </a>
 
       <div className="mx-auto flex max-w-6xl flex-col gap-14">
         <header className="flex flex-col items-start gap-5">
@@ -122,19 +173,10 @@ export function Experiment() {
                     selected ? 'shadow-[0_0_0_3px_var(--wg-forest)]' : 'shadow-[0_10px_24px_-14px_rgb(27_38_34/0.45)]',
                   )}
                 >
-                  <input
-                    type="radio"
-                    name="scenario"
-                    value={preset.id}
-                    checked={selected}
-                    onChange={() => actions.select(preset.id)}
-                    className="sr-only"
-                  />
+                  <input type="radio" name="scenario" value={preset.id} checked={selected} onChange={() => actions.select(preset.id)} className="sr-only" />
                   <span className="font-display text-xl font-bold">{preset.name}</span>
                   <span className="text-sm text-ink-2">{SCENARIO_NOTES[preset.id]}</span>
-                  <span className="mt-1 text-sm font-semibold tabular text-forest">
-                    {preset.workers.join(' · ')} workers
-                  </span>
+                  <span className="mt-1 text-sm font-semibold tabular text-forest">{preset.workers.join(' · ')} workers</span>
                   {selected ? <span aria-hidden="true" className="absolute right-4 top-4 size-3 rounded-full bg-forest" /> : null}
                 </label>
               )
@@ -145,14 +187,19 @@ export function Experiment() {
           </p>
         </fieldset>
 
-        {/* 2. The stations, with the extra worker's bench beside them. */}
-        <div className="flex flex-col gap-6">
+        {/* 2. The stations on a shallow arc, the extra worker's bench, and the focus rail. */}
+        <div className="flex flex-col gap-8">
           <div className="flex flex-col gap-6 wide:flex-row wide:items-start">
             <div className="flex min-w-0 flex-1 flex-col gap-4 wide:flex-row wide:items-start wide:gap-2">
               {STATIONS.map((station, index) => {
                 const here = extra.at === station.id
                 const arriving = extra.pending === station.id
-                const note = here && extra.pending ? `Finishing this order, then moving to ${placementLabel(extra.pending)}` : arriving ? 'Extra worker arrives after this order' : undefined
+                const note =
+                  here && extra.pending
+                    ? `Finishing this order, then moving to ${placementLabel(extra.pending)}`
+                    : arriving
+                      ? 'Extra worker arrives after this order'
+                      : undefined
                 const drop = dragging ? (dropTarget === station.id ? 'over' : 'valid') : undefined
                 return (
                   <Fragment key={station.id}>
@@ -163,20 +210,25 @@ export function Experiment() {
                         </svg>
                       </span>
                     ) : null}
-                    <div data-drop={station.id} className="flex min-w-0 flex-1 basis-0 flex-col gap-4" onClick={() => setFocus(station.id)}>
+                    <div
+                      data-drop={station.id}
+                      data-rail-card={index}
+                      className="flex min-w-0 flex-1 basis-0 flex-col gap-4"
+                      onClick={() => setFocusIndex(index)}
+                    >
                       <StationCard
                         station={station}
                         snapshot={snapshot.stations[index]}
                         detail="full"
                         hasExtraWorker={here}
-                        focused={focus === station.id}
+                        focused={focusIndex === index}
                         drop={drop}
                         dropHint={`Capacity if assigned: ${capacityIfExtraAt(station.id, station.id)} orders/min`}
                         note={note}
                         onLookCloser={() => open({ kind: 'station', id: station.id })}
                         onInspect={() => open({ kind: 'orders', id: station.id })}
                       />
-                      {focus === station.id ? (
+                      {focusIndex === index ? (
                         <p className="animate-in fade-in-0 slide-in-from-top-1 rounded-2xl bg-paper px-5 py-4 text-base leading-relaxed text-ink shadow-[0_10px_24px_-14px_rgb(27_38_34/0.45)] duration-300 motion-reduce:animate-none">
                           <span className="mb-1 block text-sm font-bold text-forest">What this setup means</span>
                           {insightFor(destination)}
@@ -198,86 +250,27 @@ export function Experiment() {
             />
           </div>
 
-          <div className="flex items-center justify-between gap-4">
-            <p className="text-sm font-medium" style={{ color: ROOM.fg2 }}>
-              Focus: <strong className="text-base" style={{ color: ROOM.fg }}>{STATIONS[focusIndex].name}</strong>
-            </p>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                aria-label="Focus the previous station"
-                disabled={focusIndex === 0}
-                onClick={() => setFocus(STATIONS[focusIndex - 1].id)}
-                className="size-11 rounded-full border-current/35 bg-paper/60 p-0 text-ink hover:bg-paper"
-              >
-                <ChevronLeft aria-hidden="true" className="size-5" />
-              </Button>
-              <Button
-                variant="outline"
-                aria-label="Focus the next station"
-                disabled={focusIndex === STATIONS.length - 1}
-                onClick={() => setFocus(STATIONS[focusIndex + 1].id)}
-                className="size-11 rounded-full border-current/35 bg-paper/60 p-0 text-ink hover:bg-paper"
-              >
-                <ChevronRight aria-hidden="true" className="size-5" />
-              </Button>
-            </div>
-          </div>
+          <FocusRail
+            labels={STATION_NAMES}
+            index={focusIndex}
+            onChange={setFocusIndex}
+            onProgress={(position) => {
+              lean.current.f = position
+              applyArc(position)
+            }}
+            frozen={dragging}
+          />
         </div>
 
-        {/* 3. Run controls and the keyboard and touch way to place the worker. */}
-        <div className="grid gap-5 wide:grid-cols-[1.15fr_1fr]">
-          <div className="flex flex-col gap-6 rounded-card bg-paper p-7 text-ink shadow-[0_10px_24px_-14px_rgb(27_38_34/0.45)]">
-            <div className="flex flex-wrap items-center gap-3">
-              <Button
-                onClick={running ? actions.pause : actions.play}
-                disabled={complete}
-                className="h-12 min-w-32 gap-2 rounded-control px-6 text-base font-semibold"
-              >
-                {running ? <Pause aria-hidden="true" className="size-5" /> : <Play aria-hidden="true" className="size-5" />}
-                {running ? 'Pause' : complete ? 'Finished' : 'Play'}
-              </Button>
-              <Button
-                variant="outline"
-                onClick={actions.restart}
-                className="h-12 gap-2 rounded-control border-2 border-forest/30 px-5 text-base font-semibold text-forest hover:bg-active-tint"
-              >
-                <RotateCcw aria-hidden="true" className="size-4" />
-                Restart this setup
-              </Button>
-            </div>
-            <div className="flex flex-wrap items-end justify-between gap-6">
-              <div>
-                <p className="text-sm font-medium text-ink-2">Clock</p>
-                <output className="display block text-6xl leading-[0.9] tabular" aria-label={`Clock ${mmss(seconds)}`}>
-                  {mmss(seconds)}
-                </output>
-                <p className="mt-1 text-sm text-ink-2">{seconds > 600 ? 'Arrivals stopped at 10:00' : 'Arrivals run until 10:00'}</p>
-              </div>
-              <fieldset>
-                <legend className="mb-2 text-sm font-medium text-ink-2">Speed</legend>
-                <div className="flex gap-2">
-                  {([10, 1] as const).map((s) => (
-                    <label
-                      key={s}
-                      className={cn(
-                        'cursor-pointer rounded-full px-4 py-2.5 text-sm font-semibold transition-colors has-[:focus-visible]:ring-3 has-[:focus-visible]:ring-ring/50',
-                        view.speed === s ? 'bg-forest text-paper' : 'bg-line/50 text-ink hover:bg-line',
-                      )}
-                    >
-                      <input type="radio" name="speed" checked={view.speed === s} onChange={() => actions.setSpeed(s)} className="sr-only" />
-                      {s === 10 ? '10× faster' : 'Real time'}
-                    </label>
-                  ))}
-                </div>
-              </fieldset>
-            </div>
-            <div className="border-t-2 border-dashed border-line pt-4">
-              <p className="text-base font-semibold">{view.label}</p>
-              <p className="text-sm text-ink-2" role="status">
-                {modeText}
-              </p>
-            </div>
+        {/* 3. Where the run stands, and the keyboard and touch way to place the worker. */}
+        <div className="grid gap-5 wide:grid-cols-2">
+          <div className="flex flex-col gap-3 rounded-card bg-paper p-7 text-ink shadow-[0_10px_24px_-14px_rgb(27_38_34/0.45)]">
+            <p className="text-sm font-medium text-ink-2">This run</p>
+            <p className="font-display text-2xl font-bold">{view.label}</p>
+            <p className="text-base text-ink-2" role="status">
+              {modeText}
+            </p>
+            <p className="text-sm text-ink-2">{seconds > 600 ? 'Arrivals stopped at 10:00.' : 'Arrivals run until 10:00.'}</p>
           </div>
 
           <fieldset className="flex flex-col gap-4 rounded-card bg-paper p-7 text-ink shadow-[0_10px_24px_-14px_rgb(27_38_34/0.45)]">
@@ -307,9 +300,7 @@ export function Experiment() {
                 )
               })}
             </div>
-            <p className="text-sm text-ink-2">
-              A busy worker finishes the order they are making first. Moving a worker changes this run to a custom one.
-            </p>
+            <p className="text-sm text-ink-2">A busy worker finishes the order they are making first. Moving a worker changes this run to a custom one.</p>
           </fieldset>
         </div>
 
@@ -327,11 +318,7 @@ export function Experiment() {
         </div>
 
         <div className="flex flex-wrap gap-3">
-          <Button
-            onClick={() => setShowComparison((v) => !v)}
-            aria-expanded={showComparison}
-            className="h-12 rounded-control px-6 text-base font-semibold"
-          >
+          <Button onClick={() => setShowComparison((v) => !v)} aria-expanded={showComparison} className="h-12 rounded-control px-6 text-base font-semibold">
             {showComparison ? 'Hide the comparison' : 'Compare the three setups'}
           </Button>
           <Button
@@ -351,6 +338,56 @@ export function Experiment() {
         </div>
 
         {showComparison ? <ComparisonPanel /> : null}
+
+        {/* The run bar. It is the last child so it can stick to the bottom of the screen while the
+            workspace is in view, on every screen size. Play is never far away. */}
+        <div
+          id="run-controls"
+          role="group"
+          aria-label="Run controls"
+          className="sticky bottom-4 z-40 -mx-2 flex flex-wrap items-center gap-x-4 gap-y-3 rounded-[28px] bg-paper px-4 py-3 text-ink shadow-[0_18px_40px_-12px_rgb(27_38_34/0.55)] ring-1 ring-ink/10 sm:px-6"
+        >
+          <Button
+            onClick={running ? actions.pause : actions.play}
+            disabled={complete}
+            className="h-12 min-w-28 gap-2 rounded-full px-5 text-base font-semibold"
+          >
+            {running ? <Pause aria-hidden="true" className="size-5" /> : <Play aria-hidden="true" className="size-5" />}
+            {running ? 'Pause' : complete ? 'Finished' : 'Play'}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={actions.restart}
+            aria-label="Restart this setup"
+            className="h-12 gap-2 rounded-full border-2 border-forest/30 px-4 text-base font-semibold text-forest hover:bg-active-tint"
+          >
+            <RotateCcw aria-hidden="true" className="size-4" />
+            <span className="hidden sm:inline">Restart this setup</span>
+          </Button>
+          <div className="flex items-baseline gap-2">
+            <output className="display text-4xl leading-none tabular" aria-label={`Clock ${mmss(seconds)}`}>
+              {mmss(seconds)}
+            </output>
+            <span className="hidden text-sm text-ink-2 sm:inline">clock</span>
+          </div>
+          <fieldset className="ml-auto">
+            <legend className="sr-only">Speed</legend>
+            <div className="flex gap-1.5">
+              {([10, 1] as const).map((s) => (
+                <label
+                  key={s}
+                  className={cn(
+                    'cursor-pointer rounded-full px-3.5 py-2.5 text-sm font-semibold transition-colors has-[:focus-visible]:ring-3 has-[:focus-visible]:ring-ring/50',
+                    view.speed === s ? 'bg-forest text-paper' : 'bg-line/50 text-ink hover:bg-line',
+                  )}
+                >
+                  <input type="radio" name="speed" checked={view.speed === s} onChange={() => actions.setSpeed(s)} className="sr-only" />
+                  {s === 10 ? '10× faster' : 'Real time'}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+        </div>
       </div>
 
       <p className="sr-only" role="status" aria-live="polite">
