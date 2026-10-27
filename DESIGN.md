@@ -49,3 +49,8 @@ Station card, top to bottom: step number and title; line illustration; worker sl
 ## Decisions log
 
 - 2026-10-27: shadcn/ui initialised with the `radix-nova` preset, then remapped onto the project tokens above. Dark mode removed (not in scope).
+- 2026-10-27 (Phase 1): Stage composition fixed: centered large headline, three white station cards on a shallow CSS arc (rotateY ±5deg, 14px drop on the outer cards, desktop only), arrows between cards, vertical flow on narrow screens. Cards are separated from the page by shadow and tone; inside a card, one rule separates the illustration/workers from the live numbers.
+- Order dots: solid green = being made, ring with warm tint = waiting, soft grey = picked up. Always paired with a text count. Workers are outlined people (extra worker: dashed green outline), never circles.
+- Queue emphasis uses the warm tint and text; capacity emphasis uses the green tint. Both are paired with the numbers, not color alone.
+- Illustrations: one isometric projection (`src/illustrations/iso-math.ts`), 1.25px non-scaling strokes, right face lightly shaded. Current register, espresso station and pickup shelf are Phase 1 stand-ins.
+- Taste was used selectively: its copy rules and "find the idea" step. Its random direction draw and its bans on thin rules and boxed cards were not applied, because plan.md §4 fixes the direction (fine borders, light cards).
