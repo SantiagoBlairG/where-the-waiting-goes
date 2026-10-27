@@ -25,6 +25,16 @@ type StationCardProps = {
   /** The last worker here is the flexible extra worker. */
   hasExtraWorker?: boolean
   trail?: TrailState
+  /** Workspace: this is the focused station. */
+  focused?: boolean
+  /** Workspace: a worker is being dragged. "valid" shows the target, "over" the one under the pointer. */
+  drop?: 'valid' | 'over'
+  /** Workspace: the preview shown on the station the worker is over. */
+  dropHint?: string
+  /** Workspace: a short note, for example about a move waiting for service to finish. */
+  note?: string
+  onLookCloser?: () => void
+  onInspect?: () => void
   className?: string
 }
 
@@ -100,6 +110,12 @@ function StationCardBase({
   emphasis,
   hasExtraWorker = false,
   trail,
+  focused = false,
+  drop,
+  dropHint,
+  note,
+  onLookCloser,
+  onInspect,
   className,
 }: StationCardProps) {
   const headingId = useId()
@@ -133,7 +149,7 @@ function StationCardBase({
     </div>
   )
 
-  const dots = (
+  const dotsLane = (
     <div aria-hidden="true" className="flex min-h-4 flex-wrap items-center gap-2">
       {Array.from({ length: snapshot.inService }, (_, i) => (
         <OrderDot key={`s${i}`} state="service" />
@@ -143,6 +159,20 @@ function StationCardBase({
         <OrderDot key={`w${i}`} state="waiting" />
       ))}
     </div>
+  )
+
+  // With an inspect action the whole lane is the button, so nobody has to hit a single small dot.
+  const dots = onInspect ? (
+    <button
+      type="button"
+      onClick={onInspect}
+      aria-label={`See the orders at ${station.name}`}
+      className="-mx-2 -my-1.5 min-h-10 rounded-control px-2 py-1.5 text-left outline-none transition-colors hover:bg-active-tint focus-visible:ring-3 focus-visible:ring-ring/50"
+    >
+      {dotsLane}
+    </button>
+  ) : (
+    dotsLane
   )
 
   const waitingNumber = (
@@ -159,7 +189,11 @@ function StationCardBase({
   const surface = cn(
     'group relative flex w-full flex-col overflow-hidden bg-paper text-ink outline-none',
     'transition-[transform,opacity] duration-300 ease-out will-change-transform motion-reduce:transition-none',
-    active ? '[--ly:-14px] hover:[--ly:-18px]' : '[--ly:0px] hover:[--ly:-6px]',
+    active
+      ? '[--ly:-14px] hover:[--ly:-18px]'
+      : focused
+        ? '[--ly:-8px] hover:[--ly:-12px]'
+        : '[--ly:0px] hover:[--ly:-6px]',
     'focus-within:[--ly:-6px]',
     trail === 'next' && 'opacity-[0.72]',
   )
@@ -250,6 +284,26 @@ function StationCardBase({
           </p>
         ) : null}
 
+        {focused && !active ? (
+          <span aria-hidden="true" className="pointer-events-none absolute inset-0 z-20 rounded-card border-2 border-forest/55" />
+        ) : null}
+        {drop ? (
+          <>
+            <span
+              aria-hidden="true"
+              className={cn(
+                'pointer-events-none absolute inset-0 z-20 rounded-card border-[3px] transition-colors duration-150',
+                drop === 'over' ? 'border-forest bg-forest/10' : 'border-dashed border-forest/60 bg-forest/[0.04]',
+              )}
+            />
+            {drop === 'over' && dropHint ? (
+              <p className="absolute left-1/2 top-16 z-30 -translate-x-1/2 whitespace-nowrap rounded-full bg-forest px-4 py-2 text-sm font-semibold text-paper shadow-lg">
+                {dropHint}
+              </p>
+            ) : null}
+          </>
+        ) : null}
+
         <header className={cn('flex items-center gap-4 px-6 pb-2', headerTop)}>
           <span aria-hidden="true" className={cn('display text-[3.8rem] leading-[0.85]', accent.numeral)}>
             {station.step}
@@ -271,6 +325,10 @@ function StationCardBase({
             className="absolute inset-x-[18%] bottom-[7%] h-[9%] bg-[radial-gradient(closest-side,rgb(27_38_34/0.2),transparent)]"
           />
         </div>
+
+        {note ? (
+          <p className="mx-6 mb-3 rounded-full bg-active-tint px-4 py-2 text-sm font-semibold text-forest">{note}</p>
+        ) : null}
 
         <div
           className="flex flex-col justify-between border-t-2 border-dashed border-line px-6 pb-5 pt-4"
@@ -315,6 +373,16 @@ function StationCardBase({
             </>
           ) : null}
         </div>
+        {onLookCloser ? (
+          <button
+            type="button"
+            onClick={onLookCloser}
+            aria-label={`Look closer at ${station.name}`}
+            className="mx-5 mb-5 h-12 rounded-control border-2 border-forest/30 text-base font-semibold text-forest outline-none transition-colors hover:bg-active-tint focus-visible:ring-3 focus-visible:ring-ring/50"
+          >
+            Look closer
+          </button>
+        ) : null}
       </article>
     </div>
   )

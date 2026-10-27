@@ -83,6 +83,8 @@ export function StoryExperience() {
   const track = useRef<HTMLDivElement>(null)
   const [step, setStep] = useState<Step>(START)
   const [rewind, setRewind] = useState(30)
+  // The rail and the opening cue belong to the pinned story only: hide them once it has scrolled away.
+  const [onStage, setOnStage] = useState(true)
   const live = useRef({ step: START, prevBeat: -1 })
 
   const scrollToBeat = useCallback((beat: number) => {
@@ -135,6 +137,12 @@ export function StoryExperience() {
       })
       // Keep the stage below the headline whenever the text reflows for any reason: window resize,
       // a font finishing loading, or a different wrap. A one-off measurement goes stale.
+      const stageTrigger = ScrollTrigger.create({
+        trigger: track.current,
+        start: 'top 60%',
+        end: 'bottom 40%',
+        onToggle: (self) => setOnStage(self.isActive),
+      })
       const relayout = () => positionStage(root.current, live.current.step.beat)
       const observer = new ResizeObserver(relayout)
       q('[data-text]').forEach((g) => observer.observe(g))
@@ -149,6 +157,7 @@ export function StoryExperience() {
         window.removeEventListener('resize', relayout)
         document.fonts?.removeEventListener('loadingdone', relayout)
         st.kill()
+        stageTrigger.kill()
       }
     },
     { scope: root },
@@ -273,7 +282,6 @@ export function StoryExperience() {
       </div>
 
       <div ref={track} className="relative" style={{ height: `${TOTAL_WEIGHT * 100}svh` }}>
-        <span id="experiment" aria-hidden="true" className="absolute left-0" style={{ top: `${beatStart(6) * 100}%` }} />
 
         <div aria-hidden="true" className="sticky top-0 isolate h-svh overflow-hidden">
           {/* The room: a calm tone from the palette, two soft glows, coffee-ring stains and grain. */}
@@ -379,7 +387,16 @@ export function StoryExperience() {
           </a>
         </div>
 
-        <nav aria-label="Story chapters" data-fg-target className="fixed right-4 top-1/2 z-30 hidden -translate-y-1/2 flex-col wide:flex" style={{ color: theme0.fg }}>
+        <nav
+          aria-label="Story chapters"
+          data-fg-target
+          inert={!onStage}
+          className={cn(
+            'fixed right-4 top-1/2 z-30 hidden -translate-y-1/2 flex-col transition-opacity duration-300 wide:flex',
+            !onStage && 'pointer-events-none opacity-0',
+          )}
+          style={{ color: theme0.fg }}
+        >
           {BEAT_LABELS.map((label, i) => (
             <button
               key={label}

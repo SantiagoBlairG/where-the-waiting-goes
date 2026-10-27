@@ -54,7 +54,7 @@ export function StoryStatic() {
         <CoffeeStage snapshot={cashierAtClose} detail="full" extraAt="order" emphasis={{ station: 'drinks', kind: 'both' }} />
       </Room>
 
-      <Room {...byId['your-turn']} id="experiment" last>
+      <Room {...byId['your-turn']} last>
         <div className="flex flex-col items-stretch gap-8 wide:flex-row wide:items-center">
           <div className="min-w-0 flex-1">
             <CoffeeStage snapshot={startOfRush} detail="full" />

@@ -122,3 +122,30 @@ Client: some slides still overlapped text, some content sat too close to the tex
 - The rush totals (picked up, still in the shop) moved under the clock to free vertical space for the note.
 - Fixed a rounding bug: `locate(1)` returned 0.9999999999999994 for the end of the last beat with the new weights.
 - The Phase 3 note about total scroll length is now 15.3 screens.
+
+## Phase 4 — Unlock the interactive workspace: DONE, with gaps listed below (2026-10-27)
+
+What exists (`src/experiment/`, mounted after the story in `App.tsx`; `#experiment` and every "Skip to experiment" link point at it):
+
+- **Session model** (`session.ts`, pure, 17 tests): modes paused, running, complete; presets reset to t=0 and pause; Restart keeps the chosen allocation and turns a pending move into the starting allocation; Play, Pause, speed 10× or real time; a dialog *holds* the run and releases it without starting a paused one; a stalled frame cannot make the run jump (real time is clamped per tick); the same finished run at either speed and any frame size; moving the worker labels the run "Custom · based on <preset>" and records the action and time; presets are immutable; a custom run never inherits a preset's result.
+- **Controller** (`useExperiment.ts`): feeds the session from animation frames only while running, pauses on a hidden tab with no catch-up, announces assignments for screen readers.
+- **Workspace** (`Experiment.tsx`): setup chooser (radio cards) with the "restarts the rush, paused" note; three tickets with Look closer buttons, focus highlight, and a whole-lane button over the order dots that opens the orders list; the extra worker's bench with a GSAP Draggable badge (8px threshold, drop on a station to assign, on the bench for off duty, anywhere else snaps back and changes nothing); valid stations highlight while dragging and the one under the pointer previews "Capacity if assigned"; busy workers show "Finishing this order, then moving to X" and the destination "Extra worker arrives after this order"; the "Assign extra worker" radio group is the full keyboard and touch alternative; Play/Pause, Restart this setup, speed, clock; three headline metrics (Completed of 30, Still in the shop, Active workers) with the so-far average as secondary text and a warning that it is not comparable with full-run averages; a contextual insight under the focused ticket; Previous/Next focus buttons.
+- **Details on demand** (`Dialogs.tsx`, Radix): station detail (service time, workers, queue versus in service, the capacity calculation), orders list (every arrived order with arrival time, where it is now, wait at each station, completion), and "How this works" (assumptions). The run is held while any is open and focus returns to the button that opened it (a bug the end-to-end test caught: Radix returns focus only to a DialogTrigger, ours open from code).
+- **Full-run comparison** (`ComparisonPanel.tsx`): the three presets each run to the end in a fresh simulation, labelled "Full-run model results", independent of the live run, showing 18/18/23 picked up, 3:34/3:34/2:07 averages, last pickups 15:39/15:39/12:45, waits per station, and "the original team has three people".
+- **Pause rules:** scrolling the workspace out of view pauses the run and keeps it (Play resumes).
+- Also this round: station tickets carry optional workspace props; the story's chapter rail now hides once the pinned story has scrolled away.
+
+Checks: 55 unit tests (22 in `src/experiment`), 23 end-to-end tests on desktop (twice, no flakes) and 11 passing plus 12 intentionally skipped on the phone emulation. New `tests/e2e/experiment.spec.ts` covers the start state, keyboard assignment, setup reset clearing the Custom label, Play and Pause, Restart, the dialog hold, Escape and focus return, the orders list, the full-run fixtures, no horizontal scroll, and mouse drags (valid drop with the capacity preview, invalid drop, drop on the bench).
+
+Gaps against plan.md §8, stated plainly:
+- **No card rail.** Focus changes with the Previous/Next buttons or by clicking a ticket. There is no draggable, snapping, bounded rail, and the workspace tickets are flat, not on the story's shallow arc.
+- **Order dots are not individually clickable.** The whole dots lane opens the orders list instead (larger target, same information).
+- **Touch drag is untested.** Dragging was tested with a mouse; touch visitors have the assign control, which is tested.
+- **Not end-to-end tested:** the hidden-tab pause, the scroll-out pause, and the story-to-experiment handoff as one flow (the session rules for them are unit-tested).
+- **Phone layout:** the Play button and clock sit well below the three stacked tickets, so a phone visitor scrolls between them. A compact sticky run bar would fix it but needs distinct control names to avoid duplicate buttons; not done.
+- **Handoff:** the pinned story's last beat rewinds the clock, then the workspace follows below as its own section starting at 0:00, paused. It is not the same stage "settling in place".
+- Contrast numbers, 200% zoom, and a performance profile of a full run are still unchecked.
+
+## Next: Phase 5 — Comparisons and explanations
+
+Mostly present already (full-run comparison, insights, order journeys, methodology). Remaining: check that detail is revealed progressively, add an explanation of fixed demand and the emerging ordering constraint (why an extra barista leaves a line at the register), and make the cashier-versus-barista comparison explanation explicit.
