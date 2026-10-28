@@ -112,7 +112,14 @@ export function Experiment() {
     actions.play()
   }
 
-  const next = PRESETS.find((p) => !results[p.id] && p.id !== view.presetId)
+  // The results card suggests a setup that has not been run yet, whichever is selected now,
+  // until all four are done.
+  const next = PRESETS.find((p) => !results[p.id])
+  // Its button picks that setup, brings the stage back into view and starts the run.
+  const runNext = (id: PresetId) => {
+    actions.select(id)
+    play()
+  }
   // The clock bar runs to the last pickup, so it is full exactly when the run is.
   const lastPickup = FULL[view.presetId].lastPickupSeconds
   const progress = Math.min(1, seconds / lastPickup)
@@ -205,7 +212,7 @@ export function Experiment() {
           {/* 3. The results of every finished run, switchable in place. */}
           <div ref={resultsRef} className="scroll-mt-24 empty:hidden">
             {shown ? (
-              <ResultsPanel results={results} baseline={BASELINE} shown={shown} onShow={setShown} next={next} onTryNext={actions.select} />
+              <ResultsPanel results={results} baseline={BASELINE} shown={shown} onShow={setShown} next={next} onTryNext={runNext} />
             ) : null}
           </div>
 

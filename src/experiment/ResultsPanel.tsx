@@ -13,7 +13,7 @@ type ResultsPanelProps = {
   /** Which finished run the panel shows. */
   shown: PresetId
   onShow: (id: PresetId) => void
-  /** The next setup not yet run, if any. */
+  /** A setup not yet run, if any. Its button selects it, scrolls up and starts the run. */
   next?: Preset
   onTryNext: (id: PresetId) => void
 }
@@ -118,7 +118,7 @@ export function ResultsPanel({ results, baseline, shown, onShow, next, onTryNext
                 onClick={() => onTryNext(next.id)}
                 className="press w-fit cursor-pointer rounded-full bg-forest px-5 py-3 text-base font-semibold text-paper outline-none transition-[background-color,scale] duration-150 hover:bg-[#2f5348] focus-visible:ring-3 focus-visible:ring-ring/50"
               >
-                Try {next.name.toLowerCase()} next
+                Run {next.name.toLowerCase()} next
               </button>
             ) : (
               <p className="text-base font-semibold">You have tried them all. Switch between them above.</p>

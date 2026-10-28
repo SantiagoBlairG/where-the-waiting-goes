@@ -258,3 +258,9 @@ Not verified: Safari, Firefox, real phones, a screen reader, the comprehension g
 - **A finished run scrolls its result into view**, the same way Play brings the stage into view. Only a newly finished run does it, not switching between results.
 
 Verified on the production build: 69 unit tests; Playwright 34 passed, 12 skipped (now also checks that the result is in view after a run); layout sweep clean at 1440x900, 1100x700, 960x680, 390x844 and 320x640; axe 0 violations; contrast no fails across 238 text styles.
+
+## Round 5 (2026-10-28)
+
+- The results card's button ("Run extra barista next") now selects that setup, scrolls the stage back into view and starts the run by itself.
+- It always suggests a setup that has not been run yet, whichever setup is selected at the moment, until all four have been run (then it says so). Before, it skipped the selected setup even when that one had not been run.
+- Verified: 69 unit tests; Playwright 36 passed, 12 skipped (a new test covers the suggestion with a different setup selected; the four-run test now checks the run starts by itself and the stage is in view).

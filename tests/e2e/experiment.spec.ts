@@ -86,8 +86,9 @@ test.describe('the experiment', () => {
     test.setTimeout(300_000)
     await page.clock.install()
     const section = await open(page)
-    const runToEnd = async () => {
-      await section.getByRole('button', { name: 'Play' }).click()
+    // A run started from the results card plays by itself; otherwise press Play.
+    const runToEnd = async (alreadyRunning = false) => {
+      if (!alreadyRunning) await section.getByRole('button', { name: 'Play' }).click()
       // 45x speed: the slowest setup finishes at 16:22 of simulated time, about 22 s of fake real time.
       for (let i = 0; i < 6 && (await section.getByRole('button', { name: 'Finished' }).count()) === 0; i++) await page.clock.runFor(8_000)
       await expect(section.getByRole('button', { name: 'Finished' })).toBeDisabled()
@@ -102,21 +103,24 @@ test.describe('the experiment', () => {
     await expect(results).toContainText('Make drinks is the slowest step at 2 orders a minute, while 3 arrive.')
     await expect(tab(page, 'Original team')).toContainText('17 coffees by 10:00 · avg 3:51')
 
-    await section.getByRole('button', { name: 'Try extra cashier next' }).click()
+    await section.getByRole('button', { name: 'Run extra cashier next' }).click()
+    // The card's button selects the setup, brings the stage back into view and starts the run.
+    await expect(section.getByRole('button', { name: 'Pause' })).toBeVisible()
+    await expect(station(page, 'Order & pay')).toBeInViewport()
     await expect(section.getByRole('radio', { name: /Extra cashier/ })).toBeChecked()
-    await runToEnd()
+    await runToEnd(true)
     await expect(results).toContainText('Waiting at the register went from 58 s to 0 s. Waiting at the drinks station went from 91 s to 130 s.')
     await expect(results).toContainText('18 orders are picked up by 10:00, 1 more than the original team.')
     await expect(results).toContainText('All 30 coffees served in 16:12 · 0:10 sooner than the original team')
     await expect(tab(page, 'Extra cashier')).toContainText('18 coffees by 10:00 · avg 3:32')
 
-    await section.getByRole('button', { name: 'Try extra barista next' }).click()
-    await runToEnd()
+    await section.getByRole('button', { name: 'Run extra barista next' }).click()
+    await runToEnd(true)
     await expect(results).toContainText('21 orders are picked up by 10:00, 4 more than the original team.')
     await expect(results).toContainText('All 30 coffees served in 13:40 · 2:42 sooner than the original team')
     await expect(tab(page, 'Extra barista')).toContainText('21 coffees by 10:00 · avg 2:21')
-    await section.getByRole('button', { name: 'Try extra at pickup next' }).click()
-    await runToEnd()
+    await section.getByRole('button', { name: 'Run extra at pickup next' }).click()
+    await runToEnd(true)
     await expect(results).toContainText('Waiting at pick up went from 10 s to 0 s.')
     await expect(tab(page, 'Extra at pickup')).toContainText('17 coffees by 10:00 · avg 3:42')
     await expect(results).toContainText('You have tried them all.')
@@ -137,6 +141,22 @@ test.describe('the experiment', () => {
     await expect(section.getByRole('button', { name: 'Play' })).toBeInViewport()
     await expect(section.getByRole('button', { name: 'Restart this setup' })).toBeInViewport()
     await expect(section.locator('output')).toBeInViewport()
+  })
+
+  test('the results card suggests a setup not yet run, even when another one is selected', async ({ page }) => {
+    test.setTimeout(120_000)
+    await page.clock.install()
+    const section = await open(page)
+    await section.getByRole('radio', { name: /Extra barista/ }).check({ force: true })
+    await section.getByRole('button', { name: 'Play' }).click()
+    for (let i = 0; i < 6 && (await section.getByRole('button', { name: 'Finished' }).count()) === 0; i++) await page.clock.runFor(8_000)
+    const results = section.getByRole('region', { name: 'Results' })
+    await expect(results).toContainText('Extra barista: 21 of 30')
+    // Not run yet: the original team comes first.
+    await expect(results.getByRole('button', { name: 'Run original team next' })).toBeVisible()
+    // Selecting a different setup that has not been run does not change the suggestion to a played one.
+    await section.getByRole('radio', { name: /Extra cashier/ }).check({ force: true })
+    await expect(results.getByRole('button', { name: 'Run original team next' })).toBeVisible()
   })
 
   test('how this works opens and closes', async ({ page }) => {
