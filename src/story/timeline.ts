@@ -9,7 +9,7 @@ import type { Snapshot } from '@/simulation/types'
  */
 
 /** Scroll length of each beat, in viewport heights. The rush gets the most: time plays out inside it. */
-export const BEAT_WEIGHTS = [1.1, 2.4, 5, 1.8, 1.8, 2, 1.2] as const
+export const BEAT_WEIGHTS = [1, 2.2, 3.2, 1.4, 1.4, 1.4, 1] as const
 export const BEAT_COUNT = BEAT_WEIGHTS.length
 export const TOTAL_WEIGHT = BEAT_WEIGHTS.reduce((a, b) => a + b, 0)
 

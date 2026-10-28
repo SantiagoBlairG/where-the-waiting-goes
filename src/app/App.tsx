@@ -1,5 +1,6 @@
 import { SiteNav } from '@/app/SiteNav'
 import { Experiment } from '@/experiment/Experiment'
+import { Hero } from '@/story/Hero'
 import { StoryRoot } from '@/story/StoryRoot'
 
 export function App() {
@@ -13,6 +14,7 @@ export function App() {
         Skip to experiment
       </a>
       <SiteNav />
+      <Hero />
       <StoryRoot />
       <Experiment />
     </main>

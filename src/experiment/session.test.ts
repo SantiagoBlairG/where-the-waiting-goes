@@ -61,11 +61,11 @@ describe('playback', () => {
     expect(s.timeMs).toBe(0)
   })
 
-  it('runs at 10x by default and at 1x on request, without changing the result', () => {
+  it('runs at 30x by default and at 1x on request, without changing the result', () => {
     const a = new ExperimentSession('cashier')
     a.play()
     for (let i = 0; i < 20; i++) a.tick(50) // 1 s real
-    expect(a.timeMs).toBe(10_000)
+    expect(a.timeMs).toBe(30_000)
 
     const b = new ExperimentSession('cashier')
     b.setSpeed(1)
@@ -88,7 +88,7 @@ describe('playback', () => {
     const s = new ExperimentSession()
     s.play()
     s.tick(60_000) // a minute of real time passed since the last frame
-    expect(s.timeMs).toBe(MAX_TICK_MS * 10)
+    expect(s.timeMs).toBe(MAX_TICK_MS * 30)
   })
 
   it('is complete only when all 30 orders have left, and then stays complete', () => {

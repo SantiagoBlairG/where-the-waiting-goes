@@ -46,6 +46,9 @@ Recorded 2026-10-27. Reproduce with `npm ci` on Node 24. `package-lock.json` is 
 | impeccable | github.com/pbakaus/impeccable | d34c87e1a0 (2026-10-27), skill 4.8.0, engine 0.1.18 | `npx impeccable install --providers=claude --scope=project` |
 | playwright-cli | github.com/microsoft/playwright-cli | b1a5903c5b (2026-10-19), CLI 0.1.22 | `npm i -g @playwright/cli` then `playwright-cli install --skills` |
 | playwright-skill | github.com/lackeyjb/playwright-skill (MIT) | 5.0.0 | `npx skills add lackeyjb/playwright-skill --skill playwright-skill -a claude-code -y --copy`, then `npm run setup` inside the skill folder (installs its own Playwright and a headless Chromium) |
+| Emil Kowalski skills (emil-design-eng, animate, animation-performance, animation-vocabulary, apple-design, improve-animations, review-animations, find-animation-opportunities) | github.com/emilkowalski/skills (MIT) | 2d22863 (2026-10-28) | `npx skills@latest add emilkowalski/skills --skill <each> -a claude-code -y --copy`. The Expo, Swift, mobile-native, Sonner, prototype, break-ui and pick-ui-library skills were left out (not this stack or not needed). |
+
+GSAP's ScrollToPlugin (inside the existing gsap package) is now registered in `src/lib/gsap.ts` for the hero's call to action. No new packages.
 
 Dev dependency added for the accessibility audit: `axe-core` 4.14.0 (MPL-2.0).
 

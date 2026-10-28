@@ -61,7 +61,9 @@ function inPage() {
   for (const el of leaves) {
     const cs = getComputedStyle(el)
     const r = el.getBoundingClientRect()
-    if (cs.visibility === 'hidden' || cs.display === 'none' || r.width < 2 || r.height < 2) continue
+    if (cs.visibility === 'hidden' || cs.display === 'none' || r.width < 2 || r.height < 2 || opacityOf(el) < 0.05) continue
+    // Text on a gradient (the hero card) has no single backdrop to measure against: skip it.
+    if (el.closest('[data-hero-card]')) continue
     const bg = backdrop(el)
     const fgRaw = parse(cs.color)
     if (!fgRaw) continue
@@ -93,14 +95,11 @@ function inPage() {
   await collect('page')
   const section = page.locator('#experiment')
   await section.scrollIntoViewIfNeeded()
-  await section.getByRole('button', { name: 'Compare the three setups' }).click()
-  await page.waitForTimeout(300)
-  await collect('comparison open')
-  await section.getByRole('group', { name: 'Assign extra worker' }).getByRole('radio', { name: /Make drinks/ }).check({ force: true })
+  await section.getByRole('radio', { name: /Extra barista/ }).check({ force: true })
   await section.getByRole('button', { name: 'Play' }).click()
   await page.waitForTimeout(2500)
   await collect('workspace running')
-  await section.getByRole('button', { name: 'Look closer at Make drinks' }).click()
+  await section.getByRole('button', { name: /^Make drinks/ }).click()
   await page.waitForTimeout(500)
   await collect('dialog open')
   await browser.close()

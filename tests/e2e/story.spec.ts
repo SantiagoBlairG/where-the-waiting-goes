@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 
 /** Scroll length of each beat in viewport heights. Keep in sync with src/story/timeline.ts. */
-const WEIGHTS = [1.1, 2.4, 5, 1.8, 1.8, 2, 1.2]
+const WEIGHTS = [1, 2.2, 3.2, 1.4, 1.4, 1.4, 1]
 const TOTAL = WEIGHTS.reduce((a, b) => a + b, 0)
 const HEADLINES = [
   'If ordering gets faster, why doesn’t your coffee?',
@@ -30,83 +30,108 @@ async function settle(page: Page, beat: number) {
   const group = page.locator(`[data-text="${beat}"]`)
   await expect(group).toHaveCSS('opacity', '1')
   await expect(group).toContainText(HEADLINES[beat])
-  await page.waitForTimeout(1900) // let the reveal and scene fade finish
+  await page.waitForTimeout(1500) // let the reveal and tile transitions finish
 }
 
-test.describe('pinned story on a wide screen', () => {
+const stage = (page: Page) => page.locator('[data-stage-area]')
+const tile = (page: Page, name: string) => stage(page).locator('article', { hasText: name })
+
+test.describe('welcome and pinned story on a wide screen', () => {
   test.skip(({ isMobile }) => isMobile, 'phones get the static story')
   test.use({ viewport: { width: 1440, height: 900 } })
 
-  test('shows the right words and numbers at every beat, and restores them in reverse', async ({ page }) => {
+  test('the hero zooms into the story when you scroll', async ({ page }) => {
+    await page.goto('/')
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Where the waiting goes')
+    if (capture) await page.screenshot({ path: 'docs/screenshots/0-hero.png' })
+    const clip = () => page.locator('[data-hero-card]').evaluate((el) => getComputedStyle(el).clipPath)
+    expect(await clip()).toContain('14px')
+    await page.evaluate(() => window.scrollTo(0, window.innerHeight * 0.3))
+    await expect.poll(clip).not.toContain('14px') // the card grows toward the edges
+    await goTo(page, 0, 0.3)
+    await expect(page.locator('[data-hero-frame]')).toBeHidden()
+    await settle(page, 0)
+  })
+
+  test('the call to action carries you into the story', async ({ page }) => {
+    await page.goto('/')
+    await page.getByRole('button', { name: 'See the story' }).click()
+    await expect.poll(() => page.evaluate(() => window.scrollY), { timeout: 5000 }).toBeGreaterThan(900)
+    await settle(page, 0)
+    await expect(tile(page, 'Order & pay')).toContainText('Your order')
+  })
+
+  test('shows one idea per beat on the same three tiles, and restores them in reverse', async ({ page }) => {
     const errors: string[] = []
     page.on('console', (m) => m.type() === 'error' && errors.push(m.text()))
     page.on('pageerror', (e) => errors.push(e.message))
-
     await page.goto('/')
-    await expect(page.locator('[data-text="0"]')).toContainText(HEADLINES[0])
-
     const shot = async (name: string) => {
       if (capture) await page.screenshot({ path: `docs/screenshots/${name}.png` })
     }
     const clock = () => page.locator('[data-clock]').innerText()
 
-    await page.waitForTimeout(2000)
+    await goTo(page, 0, 0.5)
+    await settle(page, 0)
     await shot('1-opening')
 
     await goTo(page, 1, 0.5)
     await settle(page, 1)
-    await expect(page.locator('[data-scene="process"]')).toContainText('Your order is here')
-    await expect(page.locator('[data-scene="process"]')).toContainText('A barista makes your drink. This takes 30 seconds.')
+    await expect(stage(page)).toContainText('Your order is at make drinks. It takes 30 seconds here.')
     await shot('2-three-stops')
 
     await goTo(page, 2, 0.55)
     await settle(page, 2)
     const forwardClock = await clock()
-    expect(forwardClock).toContain('5:40')
-    await expect(page.locator('[data-scene="process"]')).toContainText('both lines keep growing')
-    await goTo(page, 2, 0.97)
-    await page.waitForTimeout(1200)
+    expect(forwardClock).toBe('5:40')
+    await expect(stage(page)).toContainText('Lines grow at the register and the drinks.')
+    await goTo(page, 2, 0.99)
+    await expect(stage(page)).toContainText('10:00. 18 coffees handed over, 12 people still waiting.')
     await shot('3-rush')
 
     await goTo(page, 3, 0.6)
     await settle(page, 3)
-    await expect(page.locator('[data-row2]')).toContainText('Replay the same rush with an extra cashier')
+    await expect(tile(page, 'Order & pay')).toContainText('+1 cashier')
+    await expect(tile(page, 'Order & pay')).toContainText('was 4')
+    await expect(stage(page)).toContainText('Same 30 orders. Same 10 minutes.')
     await shot('4-fix')
 
     await goTo(page, 4, 0.6)
     await settle(page, 4)
-    await expect(page.locator('[data-scene="compare"]')).toContainText('Both cafés: 18 picked up, 12 still in the shop.')
-    await expect(page.locator('[data-scene="compare"]')).toContainText('9')
+    await expect(tile(page, 'Make drinks')).toContainText('9')
+    await expect(tile(page, 'Make drinks')).toContainText('was 5')
     await shot('5-surprise')
 
     await goTo(page, 5, 0.6)
     await settle(page, 5)
-    await expect(page.locator('[data-scene="process"]')).toContainText('2 orders/min')
+    await expect(tile(page, 'Make drinks')).toContainText('2 drinks a minute')
     await shot('6-reveal')
 
-    await goTo(page, 6, 0.9)
+    await goTo(page, 6, 0.6)
     await settle(page, 6)
-    await expect(page.locator('[data-clock]')).toContainText('Start of the rush. Paused.')
-    await expect(page.locator('[data-bench]')).toBeVisible()
+    await expect(stage(page).locator('[data-clock]')).toHaveCount(0)
     await shot('7-your-turn')
 
     // Reverse scroll returns to exactly the same rush state.
     await goTo(page, 2, 0.55)
     await settle(page, 2)
     expect(await clock()).toBe(forwardClock)
-
     expect(errors, errors.join('\n')).toEqual([])
   })
 
-  test('no page-level horizontal scroll, and the skip link reaches the experiment', async ({ page }) => {
+  test('the chapter rail jumps between chapters and marks the current one', async ({ page }) => {
     await page.goto('/')
-    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
-    await page.locator('[data-cue]').getByRole('link', { name: 'Skip to experiment' }).click()
-    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(4000)
+    await goTo(page, 1, 0.5)
+    await settle(page, 1)
+    const rail = page.getByRole('navigation', { name: 'Story chapters' })
+    await expect(rail.getByRole('button', { name: 'One order, three stops' })).toHaveAttribute('aria-current', 'step')
+    await rail.getByRole('button', { name: 'The reveal' }).click()
+    await expect(page.locator('[data-text="5"]')).toHaveCSS('opacity', '1', { timeout: 5000 })
   })
 
-  test('the skip link is the first thing keyboard users reach, and it works', async ({ page }) => {
+  test('no page-level horizontal scroll, and the skip link is first and works', async ({ page }) => {
     await page.goto('/')
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
     await page.keyboard.press('Tab')
     const link = page.getByRole('link', { name: 'Skip to experiment' }).first()
     await expect(link).toBeFocused()
@@ -118,11 +143,20 @@ test.describe('pinned story on a wide screen', () => {
 test.describe('static story (phones, tablets, reduced motion)', () => {
   test.use({ viewport: { width: 390, height: 844 } })
 
-  test('shows every beat as plain sections without overflow', async ({ page }) => {
+  test('shows the welcome and every beat as plain sections without overflow', async ({ page }) => {
     await page.goto('/')
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Where the waiting goes')
     for (const headline of HEADLINES) await expect(page.getByRole('heading', { name: headline })).toBeAttached()
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
     if (capture) await page.screenshot({ path: 'docs/screenshots/mobile-opening.png' })
+  })
+
+  test('on a phone the beat shows only the tile it is about', async ({ page }) => {
+    await page.goto('/')
+    await page.locator('#room-reveal').scrollIntoViewIfNeeded()
+    const reveal = page.locator('#room-reveal').locator('..')
+    await expect(reveal.locator('article', { hasText: 'Make drinks' })).toBeVisible()
+    await expect(reveal.locator('article', { hasText: 'Order & pay' })).toBeHidden()
   })
 
   test('reduced motion gets the static story even on a wide screen', async ({ page }) => {
@@ -131,6 +165,8 @@ test.describe('static story (phones, tablets, reduced motion)', () => {
     await page.goto('/')
     await expect(page.locator('[data-stage-area]')).toHaveCount(0)
     await expect(page.getByRole('heading', { name: HEADLINES[6] })).toBeAttached()
+    await page.getByRole('button', { name: 'See the story' }).click()
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(500)
   })
 })
 
@@ -150,30 +186,18 @@ test.describe('no overlapping text in the pinned story', () => {
       test.setTimeout(90_000)
       await page.setViewportSize(size)
       await page.goto('/')
-      await page.waitForTimeout(1500)
       const problems: string[] = []
       for (let beat = 0; beat < HEADLINES.length; beat++) {
         await goTo(page, beat, 0.5)
         await settle(page, beat)
         const m = await page.evaluate((beat) => {
           const text = document.querySelector<HTMLElement>(`[data-text="${beat}"]`)!.getBoundingClientRect()
-          const scene = [...document.querySelectorAll<HTMLElement>('[data-scene]')].find((e) => +getComputedStyle(e).opacity > 0.9)!
-          const inner = scene.firstElementChild!.getBoundingClientRect()
-          const clock = document.querySelector<HTMLElement>('[data-clock]')?.getBoundingClientRect()
-          return {
-            textBottom: text.bottom,
-            sceneTop: inner.top,
-            sceneBottom: inner.bottom,
-            sceneRight: inner.right,
-            clockLeft: clock?.left ?? null,
-            clockBottom: clock?.bottom ?? null,
-            vw: window.innerWidth,
-            vh: window.innerHeight,
-          }
+          const inner = document.querySelector<HTMLElement>('[data-stage-area] > div > div')!.getBoundingClientRect()
+          return { textBottom: text.bottom, top: inner.top, bottom: inner.bottom, right: inner.right, vw: window.innerWidth, vh: window.innerHeight }
         }, beat)
-        if (m.sceneTop < m.textBottom - 1) problems.push(`beat ${beat}: stage top ${Math.round(m.sceneTop)} is above text bottom ${Math.round(m.textBottom)}`)
-        if (m.sceneBottom > m.vh + 1) problems.push(`beat ${beat}: stage bottom ${Math.round(m.sceneBottom)} is below the window ${m.vh}`)
-        if (m.sceneRight > m.vw + 1) problems.push(`beat ${beat}: stage runs off the right edge`)
+        if (m.top < m.textBottom - 1) problems.push(`beat ${beat}: stage top ${Math.round(m.top)} is above text bottom ${Math.round(m.textBottom)}`)
+        if (m.bottom > m.vh + 1) problems.push(`beat ${beat}: stage bottom ${Math.round(m.bottom)} is below the window ${m.vh}`)
+        if (m.right > m.vw + 1) problems.push(`beat ${beat}: stage runs off the right edge`)
       }
       expect(problems, problems.join('\n')).toEqual([])
     })

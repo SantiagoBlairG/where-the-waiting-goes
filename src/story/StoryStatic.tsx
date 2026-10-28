@@ -1,13 +1,12 @@
 import { useRef, type ReactNode } from 'react'
 import { Info } from 'lucide-react'
-import { CoffeeStage } from '@/components/CoffeeStage'
-import { Worker } from '@/illustrations/Worker'
 import { gsap, ScrollTrigger, useGSAP } from '@/lib/gsap'
 import { cn } from '@/lib/utils'
-import { MODEL_LABEL, SAME_RUSH_LABEL, beats, type Beat, type BeatId } from './storyBeats'
-import { OpeningCard } from './OpeningCard'
+import { MODEL_LABEL, beats, type Beat, type BeatId } from './storyBeats'
+import { frameFor, type StageFrame } from './frames'
 import { RevealText } from './RevealText'
-import { baselineAtClose, baselineMidRush, cashierAtClose, startOfRush } from './storySnapshots'
+import { StoryStage } from './StoryStage'
+import { baselineMidRush } from './storySnapshots'
 import { BEAT_THEMES, GLOW_BACKGROUND, RUSH_MID, type RoomTheme } from './theme'
 
 /**
@@ -22,48 +21,26 @@ export function StoryStatic() {
     { beat: Beat; theme: RoomTheme }
   >
 
+  // The same simplified frames as the pinned story. The traced order rests at its first stop and
+  // the rush is shown half way through.
+  const stage = (index: number, frame: StageFrame, tracePosition?: number) => (
+    <StoryStage frame={frame} tracePosition={tracePosition} phoneCompact key={index} />
+  )
+
   return (
-    <div>
+    <div id="story">
       <Room {...byId.familiar} first>
-        <OpeningCard className="w-full max-w-[460px] self-end" />
-        <a
-          href="#experiment"
-          className="mt-6 inline-block self-start rounded-control px-1 py-2 text-sm font-semibold underline underline-offset-4 outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
-        >
-          Skip to experiment
-        </a>
+        {stage(0, frameFor(0))}
       </Room>
-
-      <Room {...byId['three-stops']}>
-        <CoffeeStage snapshot={startOfRush} detail="named" trail={{ order: 'now', drinks: 'next', pickup: 'next' }} />
-      </Room>
-
+      <Room {...byId['three-stops']}>{stage(1, frameFor(1, { stop: 0 }), 0)}</Room>
       <Room {...byId.rush} theme={RUSH_MID}>
-        <CoffeeStage snapshot={baselineMidRush} detail="counts" showTotals />
+        {stage(2, frameFor(2, { rush: baselineMidRush }))}
       </Room>
-
-      <Room {...byId.fix}>
-        <Compare />
-      </Room>
-
-      <Room {...byId.surprise}>
-        <Compare surprise />
-      </Room>
-
-      <Room {...byId.reveal}>
-        <CoffeeStage snapshot={cashierAtClose} detail="full" extraAt="order" emphasis={{ station: 'drinks', kind: 'both' }} />
-      </Room>
-
+      <Room {...byId.fix}>{stage(3, frameFor(3))}</Room>
+      <Room {...byId.surprise}>{stage(4, frameFor(4))}</Room>
+      <Room {...byId.reveal}>{stage(5, frameFor(5))}</Room>
       <Room {...byId['your-turn']} last>
-        <div className="flex flex-col items-stretch gap-8 wide:flex-row wide:items-center">
-          <div className="min-w-0 flex-1">
-            <CoffeeStage snapshot={startOfRush} detail="full" />
-          </div>
-          <div className="flex shrink-0 flex-row items-center gap-5 self-center rounded-card border-2 border-dashed border-current/45 px-7 py-6 wide:w-44 wide:flex-col wide:py-9">
-            <Worker variant="extra" label="Extra worker, on the bench" className="size-16" />
-            <p className="text-sm font-semibold wide:text-center">Extra worker</p>
-          </div>
-        </div>
+        {stage(6, frameFor(6))}
       </Room>
     </div>
   )
@@ -105,7 +82,8 @@ function Room({ beat, theme, first, last, id, children }: RoomProps) {
         const q = gsap.utils.selector(ref)
         const words = q('[data-word]')
         const support = q('[data-support]')
-        const cards = q('[data-card]')
+        // The stage as one piece. The tiles inside belong to CSS, so GSAP never writes to them.
+        const cards = q('figure > div')
         const rings = q('[data-ring]')
         const hideText = () => {
           gsap.set(words, { yPercent: 120 })
@@ -172,7 +150,7 @@ function Room({ beat, theme, first, last, id, children }: RoomProps) {
 
       <div className="mx-auto flex max-w-6xl flex-col items-start gap-6">
         <RevealText
-          as={first ? 'h1' : 'h2'}
+          as="h2"
           id={headingId}
           text={beat.headline}
           accent={beat.accent}
@@ -200,30 +178,5 @@ function Room({ beat, theme, first, last, id, children }: RoomProps) {
         ) : null}
       </div>
     </section>
-  )
-}
-
-function Compare({ surprise = false }: { surprise?: boolean }) {
-  const emphasis = { station: surprise ? ('drinks' as const) : ('order' as const), kind: 'queue' as const }
-  const countsAt = surprise ? undefined : (['order'] as const)
-  return (
-    <div className="flex w-full flex-col gap-8">
-      <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1.5">
-        <p className="display text-2xl">{SAME_RUSH_LABEL}</p>
-        {surprise ? (
-          <p className="tabular text-base opacity-90">
-            Both cafés: {baselineAtClose.completed} picked up, {baselineAtClose.inShop} still in the shop.
-          </p>
-        ) : null}
-      </div>
-      <div className="flex flex-col gap-3">
-        <h3 className="font-display text-lg font-bold">Original team</h3>
-        <CoffeeStage snapshot={baselineAtClose} detail="counts" compact countsAt={countsAt} emphasis={emphasis} />
-      </div>
-      <div className="flex flex-col gap-3">
-        <h3 className="font-display text-lg font-bold">Replay the same rush with an extra cashier</h3>
-        <CoffeeStage snapshot={cashierAtClose} detail="counts" compact extraAt="order" countsAt={countsAt} emphasis={emphasis} />
-      </div>
-    </div>
   )
 }

@@ -1,0 +1,14 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "overused-font",
+        "value": "instrument serif",
+        "createdAt": "2026-10-27T22:57:15.171Z",
+        "reason": "assistant decision: italic serif accent word mirrors the fixaplan.com reference the user chose; face is not on the overused list"
+      }
+    ]
+  }
+}

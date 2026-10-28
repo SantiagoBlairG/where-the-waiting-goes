@@ -10,7 +10,8 @@ import type { ExtraPlacement, Snapshot } from '@/simulation/types'
  * Modes (plan.md §8): paused, running, complete. ("Story" mode belongs to the page.)
  */
 export type RunMode = 'paused' | 'running' | 'complete'
-export type Speed = 1 | 10
+/** 30x plays the whole rush in about half a minute: the experiment's only speed. */
+export type Speed = 1 | 10 | 30
 
 export type RunAction = { timeMs: number; to: ExtraPlacement }
 
@@ -25,7 +26,7 @@ export class ExperimentSession {
   presetId: PresetId
   /** True once the visitor has moved the extra worker. The run is then "Custom". */
   custom = false
-  speed: Speed = 10
+  speed: Speed = 30
   /** The visitor's own intent: Play was pressed and not undone. */
   private playing = false
   /** Temporary reasons not to advance (a dialog is open). Cleared when they end. */

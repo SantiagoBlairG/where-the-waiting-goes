@@ -93,3 +93,13 @@ Structure and feel taken from the reference, with our green palette kept (client
 - **Sheets:** the plain-layout rooms and the experiment are rounded-top (40px) sheets that overlap the one before by 40px, so each slides up over the previous.
 - **Cards:** flat rounded cards (32px radius). The ticket notches, coloured top bar and dashed perforation are gone; a hairline rule and a softer shadow remain.
 - **Scroll:** native scrolling kept (no Lenis; smooth-scroll hijacking is out of scope). Not done: stat bars filling over a photo, a full-bleed dark finale, a photo hero.
+
+## Fourth pass, 2026-10-28: simplification and the welcome hero
+
+Supersedes earlier passes where they differ. Details and reasons: `docs/redesign-v4.md`.
+
+- **Hero:** inset rounded card (14px from the window, 40px radius), deep forest radial gradient with sand and mist glows and grain. Title in the display face with the serif accent ("Where the *waiting* goes"), one caption, a glass button with a forest arrow disc. The zoom is a scrubbed clip-path from inset to full bleed; content scales 1.32 and fades; the card washes to the first room colour and dissolves into the pinned story.
+- **Station tile** replaces the ticket: name and numeral, picture pad, waiting count with a ring stack (max 12, then "+n"), optional "was n", one chip. Fixed shape everywhere. Highlight = forest ring and an 8px lift. Step back = translucent card and faded picture, never faded text.
+- **Track:** a hairline with three stop ticks under the tiles and a forest order dot; or a 6px rush bar in the queue colour. Caption in a glass pill under it.
+- **Glass material** (`.glass` in `globals.css`, components layer so utilities win): white 50% to 26% vertical veil, blur 18px with saturation 170%, inset top highlight, soft shadow, and a 1px gradient rim (bright at the top left, fading along the sides). Only on floating chrome. `.glass-dark` for glass on the forest hero.
+- **Motion tokens:** `--ease-out` (0.23, 1, 0.32, 1), `--ease-in-out`, `--ease-drawer`. Press feedback `press` utility: scale 0.97 on `:active`. UI transitions are CSS transitions (interruptible); GSAP owns scroll-driven motion only.

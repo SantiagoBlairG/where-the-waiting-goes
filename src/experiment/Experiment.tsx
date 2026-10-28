@@ -1,99 +1,61 @@
-import { Fragment, useCallback, useEffect, useRef, useState } from 'react'
-import { Info, Pause, Play, RotateCcw } from 'lucide-react'
-import { OrderDot } from '@/components/OrderDot'
-import { StationCard } from '@/components/StationCard'
-import { Button } from '@/components/ui/button'
-import { gsap } from '@/lib/gsap'
-import { GLOW_BACKGROUND } from '@/story/theme'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Check, Info, Pause, Play, RotateCcw } from 'lucide-react'
+import { StationTile } from '@/components/StationTile'
 import { cn } from '@/lib/utils'
-import { ORDER_COUNT, STATIONS, type StationId } from '@/simulation/config'
-import { PRESETS, type PresetId } from '@/simulation/presets'
-import { meanSoFarSeconds } from '@/simulation/metrics'
-import type { ExtraPlacement } from '@/simulation/types'
-import { ComparisonPanel } from './ComparisonPanel'
+import { ADMISSION_WINDOW_SECONDS, ORDER_COUNT, STATIONS } from '@/simulation/config'
+import { PRESETS, fullRunResult, type FullRunResult, type PresetId } from '@/simulation/presets'
+import { GLOW_BACKGROUND } from '@/story/theme'
+import { explainPreset } from './analysis'
 import { Dialogs, type DialogState } from './Dialogs'
-import { FocusRail } from './FocusRail'
-import { RunSummary } from './RunSummary'
-import { PLACEMENTS, activeWorkers, capacityIfExtraAt, insightFor, mmss, placementLabel } from './helpers'
+import { mmss } from './helpers'
 import { useExperiment } from './useExperiment'
-import { WorkerBench } from './WorkerBench'
-
-const SCENARIO_NOTES: Record<PresetId, string> = {
-  original: 'Three people, one at each step',
-  cashier: 'Four people. The extra worker takes orders',
-  barista: 'Four people. The extra worker makes drinks',
-}
 
 const ROOM = { bg: '#c8ded3', fg: '#1b2622', fg2: '#3c4d46', glowA: 'rgba(226,223,218,0.8)', glowB: 'rgba(136,164,154,0.45)' }
-const STATION_NAMES = STATIONS.map((s) => s.name)
-/** How strongly the outer tickets lean away from the focused one, in degrees per step. */
-const LEAN = 4
-const DROP = 12
+
+/** What each setup changes, in a few words. */
+const CHANGE: Record<PresetId, string> = {
+  original: 'One person at each step',
+  cashier: '+1 person at the register',
+  barista: '+1 person making drinks',
+}
+
+/** Full-run results for each setup, from the model, computed once. */
+const FULL = Object.fromEntries(PRESETS.map((p) => [p.id, fullRunResult(p)])) as Record<PresetId, FullRunResult>
+const BASELINE = FULL.original
 
 /**
- * The interactive workspace. The visitor picks a setup or moves the one extra worker, plays the
- * same rush and watches the numbers. Everything on screen is read from the simulation session.
- * Dragging, the "Assign extra worker" control and the setup chooser all reach the same actions,
- * so keyboard and touch visitors can do everything a mouse can. The run controls live in a bar
- * that stays at the bottom of the screen while the workspace is in view, so Play is always close.
+ * The experiment, reduced to one decision and one button. Three setup tabs, one stage, one Play.
+ * A finished run writes its result onto its own tab, so after trying the three setups the
+ * comparison is simply the three tabs side by side: no panel to find, no scrolling up and down.
+ * Tapping a station opens its details. Every number comes from the simulation session.
  *
- * Motion ownership: each ticket's wrapper ([data-rail-card]) is moved by GSAP (the arc, which
- * follows the focus rail); the ticket inside only reacts to the pointer through CSS.
+ * Motion ownership: tiles are CSS-only (StationTile). The run bar's progress fill is a CSS
+ * transform transition. Nothing here is moved by GSAP.
  */
 export function Experiment() {
   const { view, announcement, actions } = useExperiment()
   const { snapshot } = view
-  const [focusIndex, setFocusIndex] = useState(1)
-  const [dragging, setDragging] = useState(false)
-  const [dropTarget, setDropTarget] = useState<ExtraPlacement | null>(null)
   const [dialog, setDialog] = useState<DialogState>(null)
-  const [showComparison, setShowComparison] = useState(false)
+  const [results, setResults] = useState<Partial<Record<PresetId, FullRunResult>>>({})
   const section = useRef<HTMLElement>(null)
   const opener = useRef<HTMLElement | null>(null)
-  const lean = useRef({ f: 1 })
-  const focus = STATIONS[focusIndex].id
+  const controls = useRef<HTMLDivElement>(null)
+  const stage = useRef<HTMLDivElement>(null)
 
-  // The arc: tickets lean toward the focused one and the outer ones sit a little lower. Wide screens only.
-  const applyArc = useCallback((position: number) => {
-    const wide = window.matchMedia('(min-width: 900px)').matches
-    gsap.utils.toArray<HTMLElement>('#experiment [data-rail-card]').forEach((el, i) => {
-      if (!wide) {
-        gsap.set(el, { clearProps: 'transform' })
-        return
-      }
-      gsap.set(el, { transformPerspective: 1400, rotationY: (position - i) * LEAN, y: Math.abs(position - i) * DROP })
-    })
-  }, [])
+  const running = view.mode === 'running'
+  const complete = view.mode === 'complete'
+  const seconds = snapshot.timeSeconds
+  const preset = PRESETS.find((p) => p.id === view.presetId)!
 
-  useEffect(() => {
-    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    gsap.killTweensOf(lean.current)
-    gsap.to(lean.current, {
-      f: focusIndex,
-      duration: reduce ? 0 : 0.5,
-      ease: 'power3.out',
-      onUpdate: () => applyArc(lean.current.f),
-      onComplete: () => applyArc(focusIndex),
-    })
-    if (reduce) applyArc(focusIndex)
-  }, [focusIndex, applyArc])
+  // A finished run leaves its result on its tab (state adjusted during render, not in an effect).
+  // The numbers are the model's full-run results, the same ones the run on screen just produced.
+  if (complete && !results[view.presetId]) setResults({ ...results, [view.presetId]: FULL[view.presetId] })
 
-  useEffect(() => {
-    const onResize = () => applyArc(lean.current.f)
-    window.addEventListener('resize', onResize)
-    return () => window.removeEventListener('resize', onResize)
-  }, [applyArc])
-
-  // Scrolling back up into the story pauses the run and keeps it; Play resumes it. Nothing resets.
+  // Scrolling back up into the story pauses the run and keeps it; Play resumes it.
   useEffect(() => {
     const el = section.current
     if (!el) return
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (!entry.isIntersecting) actions.pause()
-      },
-      { threshold: 0.02 },
-    )
+    const observer = new IntersectionObserver(([entry]) => !entry.isIntersecting && actions.pause(), { threshold: 0.02 })
     observer.observe(el)
     return () => observer.disconnect()
   }, [actions])
@@ -108,314 +70,204 @@ export function Experiment() {
     setDialog(null)
   }
 
-  const extra = snapshot.extraWorker
-  const destination = extra.pending ?? extra.at
-  const orders = actions.orders()
-  const average = meanSoFarSeconds(orders)
-  const running = view.mode === 'running'
-  const complete = view.mode === 'complete'
-  const seconds = snapshot.timeSeconds
+  // Play brings the run into view so the floating run bar never hides the numbers: the tabs and
+  // the stage together if they fit above the bar, else the whole stage, else the top of the stage.
+  const play = () => {
+    const block = controls.current
+    const tiles = stage.current
+    if (block && tiles) {
+      const top = 88
+      const bottom = window.innerHeight - 96
+      const b = block.getBoundingClientRect()
+      const t = tiles.getBoundingClientRect()
+      const shift = t.bottom - b.top <= bottom - top ? b.top - top : t.height <= bottom - top ? t.bottom - bottom : t.top - top
+      if (Math.abs(shift) > 24) {
+        const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+        window.scrollTo({ top: window.scrollY + shift, behavior: reduce ? 'auto' : 'smooth' })
+      }
+    }
+    actions.play()
+  }
 
-  const modeText = complete
-    ? `Complete: all ${ORDER_COUNT} orders have been picked up.`
-    : running
-      ? `Running at ${view.speed}× speed.`
-      : seconds === 0
-        ? 'Paused at the start of the rush.'
-        : 'Paused.'
+  const result = results[view.presetId]
+  const explanation = useMemo(() => (result ? explainPreset(preset, result, BASELINE) : null), [result, preset])
+  const next = PRESETS.find((p) => !results[p.id] && p.id !== view.presetId)
+  // The clock bar runs to the last pickup, so it is full exactly when the run is.
+  const lastPickup = FULL[view.presetId].lastPickupSeconds
+  const progress = Math.min(1, seconds / lastPickup)
 
   return (
     <section
       ref={section}
       id="experiment"
       aria-labelledby="experiment-heading"
-      className="relative isolate -mt-10 overflow-x-clip rounded-t-[40px] px-6 py-24 sm:px-12 wide:px-[7vw]"
+      className="relative isolate -mt-10 overflow-x-clip rounded-t-[40px] px-6 pb-16 pt-24 sm:px-12 wide:px-[7vw]"
       style={{ backgroundColor: ROOM.bg, color: ROOM.fg }}
     >
-      {/* Background layers are clipped on their own so the sticky run bar is not. */}
-      <div aria-hidden="true" className="absolute inset-0 -z-10 overflow-hidden">
+      <div aria-hidden="true" className="absolute inset-0 -z-10 overflow-hidden rounded-t-[40px]">
         <div className="absolute inset-0" style={{ background: GLOW_BACKGROUND, ['--glow-a' as string]: ROOM.glowA, ['--glow-b' as string]: ROOM.glowB }} />
         <div className="grain pointer-events-none absolute inset-0" />
       </div>
 
-      <a
-        href="#run-controls"
-        className="absolute left-4 top-4 z-50 -translate-y-20 rounded-control bg-paper px-4 py-2 text-sm font-semibold text-forest shadow-lg outline-none focus-visible:translate-y-0 focus-visible:ring-3 focus-visible:ring-ring/50"
-      >
-        Skip to run controls
-      </a>
-
-      <div className="mx-auto flex max-w-6xl flex-col gap-14">
-        <header className="flex flex-col items-start gap-5">
-          <h2 id="experiment-heading" className="display max-w-[16ch] text-balance text-[clamp(2.5rem,6vw,5.4rem)] leading-[0.94]">
-            Move the extra person
+      <div className="mx-auto flex max-w-[1180px] flex-col gap-10">
+        <header className="flex flex-col items-start gap-4">
+          <p className="glass rounded-full px-4 py-1.5 text-sm font-semibold">Your turn</p>
+          <h2 id="experiment-heading" className="display max-w-[18ch] text-balance text-[clamp(2.4rem,5.4vw,4.8rem)] leading-[0.96]">
+            Run the rush <span className="accent-serif">yourself</span>
           </h2>
-          <p className="max-w-[44ch] text-pretty text-lg leading-relaxed sm:text-xl" style={{ color: ROOM.fg2 }}>
-            Pick a setup or place the extra worker yourself, then play the same rush from the beginning.
-          </p>
-          <p className="inline-flex items-center gap-2 rounded-full border border-current/25 px-3.5 py-1.5 text-sm font-medium">
-            <Info aria-hidden="true" className="size-4" strokeWidth={2} />
-            A simplified coffee-shop simulation
+          <p className="max-w-[48ch] text-pretty text-lg leading-relaxed" style={{ color: ROOM.fg2 }}>
+            Pick where the extra person works and press Play. Each result stays on its tab, so you can compare.
           </p>
         </header>
 
-        {/* 1. The setup. Choosing one restarts the rush, paused. */}
-        <fieldset className="flex flex-col gap-4">
-          <legend className="mb-1 text-lg font-semibold">Start from a setup</legend>
-          <div className="grid gap-4 md:grid-cols-3">
-            {PRESETS.map((preset) => {
-              const selected = view.presetId === preset.id
-              return (
-                <label
-                  key={preset.id}
-                  className={cn(
-                    'relative flex min-h-24 cursor-pointer flex-col gap-1 rounded-card bg-paper p-5 text-ink transition-[box-shadow,transform] duration-200 hover:-translate-y-0.5',
-                    'has-[:focus-visible]:ring-3 has-[:focus-visible]:ring-ring/50',
-                    selected ? 'shadow-[0_0_0_3px_var(--wg-forest)]' : 'shadow-[0_10px_24px_-14px_rgb(27_38_34/0.45)]',
-                  )}
-                >
-                  <input type="radio" name="scenario" value={preset.id} checked={selected} onChange={() => actions.select(preset.id)} className="sr-only" />
-                  <span className="font-display text-xl font-bold">{preset.name}</span>
-                  <span className="text-sm text-ink-2">{SCENARIO_NOTES[preset.id]}</span>
-                  <span className="mt-1 text-sm font-semibold tabular text-forest">{preset.workers.join(' · ')} workers</span>
-                  {selected ? <span aria-hidden="true" className="absolute right-4 top-4 size-3 rounded-full bg-forest" /> : null}
-                </label>
-              )
-            })}
-          </div>
-          <p className="text-sm" style={{ color: ROOM.fg2 }}>
-            Choosing a setup restarts the rush from the beginning, paused. Workers are listed as order, drinks, pickup.
-          </p>
-        </fieldset>
-
-        {/* 2. The stations on a shallow arc, the extra worker's bench, and the focus rail. */}
-        <div className="flex flex-col gap-8">
-          <div className="flex flex-col gap-6 wide:flex-row wide:items-start">
-            <div className="flex min-w-0 flex-1 flex-col gap-4 wide:flex-row wide:items-start wide:gap-2">
-              {STATIONS.map((station, index) => {
-                const here = extra.at === station.id
-                const arriving = extra.pending === station.id
-                const note =
-                  here && extra.pending
-                    ? `Finishing this order, then moving to ${placementLabel(extra.pending)}`
-                    : arriving
-                      ? 'Extra worker arrives after this order'
-                      : undefined
-                const drop = dragging ? (dropTarget === station.id ? 'over' : 'valid') : undefined
-                return (
-                  <Fragment key={station.id}>
-                    {index > 0 ? (
-                      <span aria-hidden="true" className="grid shrink-0 place-items-center self-center opacity-60 wide:mt-52 wide:w-10">
-                        <svg viewBox="0 0 40 24" className="h-5 w-9 rotate-90 wide:rotate-0" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M3 12h30M26 5l8 7-8 7" />
-                        </svg>
-                      </span>
-                    ) : null}
-                    <div
-                      data-drop={station.id}
-                      data-rail-card={index}
-                      className="flex min-w-0 flex-1 basis-0 flex-col gap-4"
-                      onClick={() => setFocusIndex(index)}
-                    >
-                      <StationCard
-                        station={station}
-                        snapshot={snapshot.stations[index]}
-                        detail="full"
-                        hasExtraWorker={here}
-                        focused={focusIndex === index}
-                        drop={drop}
-                        dropHint={`Capacity if assigned: ${capacityIfExtraAt(station.id, station.id)} orders/min`}
-                        note={note}
-                        onLookCloser={() => open({ kind: 'station', id: station.id })}
-                        onInspect={() => open({ kind: 'orders', id: station.id })}
-                      />
-                      {focusIndex === index ? (
-                        <p className="animate-in fade-in-0 slide-in-from-top-1 rounded-2xl bg-paper px-5 py-4 text-base leading-relaxed text-ink shadow-[0_10px_24px_-14px_rgb(27_38_34/0.45)] duration-300 motion-reduce:animate-none">
-                          <span className="mb-1 block text-sm font-bold text-forest">What this setup means</span>
-                          {insightFor(destination)}
-                        </p>
-                      ) : null}
-                    </div>
-                  </Fragment>
-                )
-              })}
-            </div>
-            <WorkerBench
-              placement={extra.at}
-              pendingTo={extra.pending}
-              onDragChange={(isDragging, target) => {
-                setDragging(isDragging)
-                setDropTarget(target)
-              }}
-              onDrop={(target) => actions.assign(target)}
-            />
-          </div>
-
-          <FocusRail
-            labels={STATION_NAMES}
-            index={focusIndex}
-            onChange={setFocusIndex}
-            onProgress={(position) => {
-              lean.current.f = position
-              applyArc(position)
-            }}
-            frozen={dragging}
-          />
-        </div>
-
-        {/* 3. Where the run stands, and the keyboard and touch way to place the worker. */}
-        <div className="grid gap-5 wide:grid-cols-2">
-          <div className="flex flex-col gap-3 rounded-card bg-paper p-7 text-ink shadow-[0_10px_24px_-14px_rgb(27_38_34/0.45)]">
-            <p className="text-sm font-medium text-ink-2">This run</p>
-            <p className="font-display text-2xl font-bold">{view.label}</p>
-            <p className="text-base text-ink-2" role="status">
-              {modeText}
-            </p>
-            <p className="text-sm text-ink-2">{seconds > 600 ? 'Arrivals stopped at 10:00.' : 'Arrivals run until 10:00.'}</p>
-          </div>
-
-          <fieldset className="flex flex-col gap-4 rounded-card bg-paper p-7 text-ink shadow-[0_10px_24px_-14px_rgb(27_38_34/0.45)]">
-            <legend className="sr-only">Assign extra worker</legend>
-            <p className="text-lg font-semibold" aria-hidden="true">
-              Assign extra worker
-            </p>
-            <div className="grid grid-cols-2 gap-3">
-              {PLACEMENTS.map((p) => {
-                const selected = view.requested === p.id
+        {/* Everything you operate, in one block. The run bar sticks only while this block is on screen. */}
+        <div ref={controls} className="flex scroll-mt-24 flex-col gap-10">
+          {/* 1. The decision. Choosing a setup restarts the rush from the beginning, paused. */}
+          <fieldset>
+            <legend className="sr-only">Choose a setup</legend>
+            <div className="grid gap-3 sm:grid-cols-3">
+              {PRESETS.map((p) => {
+                const selected = view.presetId === p.id
+                const done = results[p.id]
                 return (
                   <label
                     key={p.id}
                     className={cn(
-                      'flex min-h-16 cursor-pointer flex-col justify-center gap-0.5 rounded-control border-2 px-4 py-3 transition-colors has-[:focus-visible]:ring-3 has-[:focus-visible]:ring-ring/50',
-                      selected ? 'border-forest bg-active-tint' : 'border-line hover:border-forest/50',
+                      'press relative flex min-h-[7.5rem] cursor-pointer flex-col gap-1.5 rounded-[26px] p-5 transition-[background-color,box-shadow,scale] duration-200 ease-[var(--ease-out)]',
+                      'has-[:focus-visible]:ring-3 has-[:focus-visible]:ring-ring/50',
+                      selected ? 'bg-paper shadow-[0_0_0_2.5px_var(--wg-forest),0_18px_36px_-18px_rgb(27_38_34/0.45)]' : 'glass hover:bg-white/50',
                     )}
                   >
-                    <input type="radio" name="extra-worker" checked={selected} onChange={() => actions.assign(p.id)} className="sr-only" />
-                    <span className="text-base font-semibold">{p.label}</span>
-                    {p.id !== 'off' ? (
-                      <span className="text-xs text-ink-2 tabular">Capacity if assigned: {capacityIfExtraAt(p.id as StationId, p.id)} orders/min</span>
-                    ) : (
-                      <span className="text-xs text-ink-2">Not on the floor</span>
-                    )}
+                    <input type="radio" name="setup" value={p.id} checked={selected} onChange={() => actions.select(p.id)} className="sr-only" />
+                    <span className="flex items-center justify-between gap-2">
+                      <span className="font-display text-xl font-semibold">{p.name}</span>
+                      {done ? (
+                        <span className="grid size-6 place-items-center rounded-full bg-forest text-paper">
+                          <Check aria-hidden="true" className="size-3.5" strokeWidth={3} />
+                        </span>
+                      ) : null}
+                    </span>
+                    <span className="text-sm text-ink-2">{CHANGE[p.id]}</span>
+                    <span className="mt-auto pt-2 text-sm tabular">
+                      {done ? (
+                        <>
+                          <strong className="display text-2xl">{done.completedAtClose}</strong> coffees by 10:00
+                          <span className="text-ink-2"> · avg {mmss(done.meanTotalSeconds)}</span>
+                        </>
+                      ) : (
+                        <span className="text-ink-2">Not run yet</span>
+                      )}
+                    </span>
                   </label>
                 )
               })}
             </div>
-            <p className="text-sm text-ink-2">A busy worker finishes the order they are making first. Moving a worker changes this run to a custom one.</p>
           </fieldset>
-        </div>
 
-        {/* 4. The numbers. Three headline figures; the average is secondary detail. */}
-        <div className="flex flex-col gap-4">
-          <div className="grid gap-4 md:grid-cols-3">
-            <Metric label="Completed" value={snapshot.completed} suffix={`of ${ORDER_COUNT}`} />
-            <Metric label="Still in the shop" value={snapshot.inShop} tint />
-            <Metric label="Active workers" value={activeWorkers(snapshot)} />
+          {/* 2. The stage: the same three tiles as the story, now with the people at each step. */}
+          <div ref={stage} className="grid gap-4 sm:grid-cols-3 sm:gap-5 wide:gap-7">
+            {STATIONS.map((station, i) => {
+              const s = snapshot.stations[i]
+              return (
+                <StationTile
+                  key={station.id}
+                  station={station}
+                  waiting={s.queue}
+                  inService={s.inService}
+                  people={s.workers}
+                  chip={s.workers > 1 ? { text: `+1 here`, tone: 'active' } : undefined}
+                  onOpen={() => open({ kind: 'station', id: station.id })}
+                />
+              )
+            })}
           </div>
-          <p className="text-sm tabular" style={{ color: ROOM.fg2 }}>
-            Average time for orders finished so far: <strong style={{ color: ROOM.fg }}>{average === null ? 'none yet' : mmss(average)}</strong>. Not the same as the
-            full-run averages, which cover all {ORDER_COUNT} orders.
-          </p>
-        </div>
 
-        {complete ? <RunSummary orders={orders} label={view.label} custom={view.custom} placement={view.requested} /> : null}
+          {/* 3. The result of this setup, once its run is finished. */}
+          {complete && result && explanation ? (
+            <div className="flex flex-col gap-4 rounded-card bg-paper p-7 text-ink shadow-[0_22px_40px_-24px_rgb(27_38_34/0.5)] animate-in fade-in-0 slide-in-from-bottom-2 duration-500 motion-reduce:animate-none sm:p-9">
+              <p className="text-sm font-semibold text-forest">{preset.name}: finished</p>
+              <p className="display text-[clamp(1.8rem,3.4vw,2.8rem)] leading-tight">
+                {result.completedAtClose} of {ORDER_COUNT} coffees handed over by 10:00.
+              </p>
+              <ul className="flex max-w-[64ch] flex-col gap-1.5 text-base leading-relaxed text-ink-2">
+                {explanation.map((line) => (
+                  <li key={line}>{line}</li>
+                ))}
+              </ul>
+              {next ? (
+                <button
+                  type="button"
+                  onClick={() => actions.select(next.id)}
+                  className="press mt-2 w-fit rounded-full bg-forest px-5 py-3 text-base font-semibold text-paper outline-none transition-[background-color,scale] duration-150 hover:bg-[#2f5348] focus-visible:ring-3 focus-visible:ring-ring/50"
+                >
+                  Try {next.name.toLowerCase()} next
+                </button>
+              ) : (
+                <p className="text-base font-semibold">You have tried all three. Compare them on the tabs above.</p>
+              )}
+            </div>
+          ) : null}
 
-        <div className="flex flex-wrap gap-3">
-          <Button onClick={() => setShowComparison((v) => !v)} aria-expanded={showComparison} className="h-12 rounded-control px-6 text-base font-semibold">
-            {showComparison ? 'Hide the comparison' : 'Compare the three setups'}
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => open({ kind: 'orders', id: focus })}
-            className="h-12 rounded-control border-2 border-forest/30 bg-paper/50 px-6 text-base font-semibold text-forest hover:bg-paper"
-          >
-            See every order
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => open({ kind: 'how' })}
-            className="h-12 rounded-control border-2 border-forest/30 bg-paper/50 px-6 text-base font-semibold text-forest hover:bg-paper"
-          >
-            How this works
-          </Button>
-        </div>
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm" style={{ color: ROOM.fg2 }}>
+            <span className="inline-flex items-center gap-2">
+              <Info aria-hidden="true" className="size-4" strokeWidth={2} />A simplified coffee-shop simulation, not a forecast.
+            </span>
+            <button
+              type="button"
+              onClick={() => open({ kind: 'how' })}
+              className="rounded-control px-1 py-2 font-semibold underline underline-offset-4 outline-none hover:opacity-75 focus-visible:ring-3 focus-visible:ring-ring/50"
+              style={{ color: ROOM.fg }}
+            >
+              How this works
+            </button>
+          </div>
 
-        {showComparison ? <ComparisonPanel /> : null}
-
-        {/* The run bar. It is the last child so it can stick to the bottom of the screen while the
-            workspace is in view, on every screen size. Play is never far away. */}
-        <div
-          id="run-controls"
-          role="group"
-          aria-label="Run controls"
-          className={
-            'sticky bottom-4 z-40 -mx-2 flex flex-wrap items-center gap-x-4 gap-y-3 rounded-[28px] bg-paper px-4 py-3 text-ink shadow-[0_18px_40px_-12px_rgb(27_38_34/0.55)] ring-1 ring-ink/10 sm:px-6 ' +
-            // A soft fade behind the bar, so content dissolves under it instead of peeking out below its edge.
-            'before:pointer-events-none before:absolute before:-bottom-4 before:-top-12 before:-z-10 before:-inset-x-2 before:bg-gradient-to-t before:from-[#c8ded3] before:from-50% before:to-transparent'
-          }
-        >
-          <Button
-            onClick={running ? actions.pause : actions.play}
-            disabled={complete}
-            className="h-12 min-w-28 gap-2 rounded-full px-5 text-base font-semibold"
-          >
-            {running ? <Pause aria-hidden="true" className="size-5" /> : <Play aria-hidden="true" className="size-5" />}
-            {running ? 'Pause' : complete ? 'Finished' : 'Play'}
-          </Button>
-          <Button
-            variant="outline"
-            onClick={actions.restart}
-            aria-label="Restart this setup"
-            className="h-12 gap-2 rounded-full border-2 border-forest/30 px-4 text-base font-semibold text-forest hover:bg-active-tint"
-          >
-            <RotateCcw aria-hidden="true" className="size-4" />
-            <span className="hidden sm:inline">Restart this setup</span>
-          </Button>
-          <div className="flex items-baseline gap-2">
-            <output className="display text-4xl leading-none tabular" aria-label={`Clock ${mmss(seconds)}`}>
+          {/* The run bar: last child so it can stick to the bottom of the screen while the workspace is in view. */}
+          <div id="run-controls" role="group" aria-label="Run controls" className="glass sticky bottom-4 z-40 flex items-center gap-2 rounded-full p-2 pr-4 text-ink sm:gap-4 sm:pr-5">
+            <button
+              type="button"
+              onClick={running ? actions.pause : play}
+              disabled={complete}
+              className="press flex h-12 items-center sm:min-w-[7.5rem] justify-center gap-2 rounded-full bg-forest px-5 text-base font-semibold text-paper shadow-[inset_0_1px_0_rgb(255_255_255/0.25)] outline-none transition-[background-color,scale,opacity] duration-150 hover:bg-[#2f5348] focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-60"
+            >
+              {running ? <Pause aria-hidden="true" className="size-5" /> : <Play aria-hidden="true" className="size-5" />}
+              {running ? 'Pause' : complete ? 'Finished' : seconds === 0 ? 'Play' : 'Resume'}
+            </button>
+            <button
+              type="button"
+              onClick={actions.restart}
+              aria-label="Restart this setup"
+              className="press grid size-12 shrink-0 place-items-center rounded-full bg-white/50 outline-none transition-[background-color,scale] duration-150 hover:bg-white/80 focus-visible:ring-3 focus-visible:ring-ring/50"
+            >
+              <RotateCcw aria-hidden="true" className="size-5" />
+            </button>
+            <output className="display shrink-0 text-2xl leading-none tabular sm:w-[4.2rem] sm:text-3xl" aria-label={`Clock ${mmss(seconds)}`}>
               {mmss(seconds)}
             </output>
-            <span className="hidden text-sm text-ink-2 sm:inline">clock</span>
-          </div>
-          <fieldset className="ml-auto">
-            <legend className="sr-only">Speed</legend>
-            <div className="flex gap-1.5">
-              {([10, 1] as const).map((s) => (
-                <label
-                  key={s}
-                  className={cn(
-                    'cursor-pointer rounded-full px-3.5 py-2.5 text-sm font-semibold transition-colors has-[:focus-visible]:ring-3 has-[:focus-visible]:ring-ring/50',
-                    view.speed === s ? 'bg-forest text-paper' : 'bg-line/50 text-ink hover:bg-line',
-                  )}
-                >
-                  <input type="radio" name="speed" checked={view.speed === s} onChange={() => actions.setSpeed(s)} className="sr-only" />
-                  {s === 10 ? '10× faster' : 'Real time'}
-                </label>
-              ))}
+            <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+              <span aria-hidden="true" className="relative h-1.5 overflow-hidden rounded-full bg-ink/10">
+                <span
+                  className="absolute inset-0 origin-left rounded-full bg-forest transition-transform duration-200 ease-linear"
+                  style={{ transform: `scaleX(${progress})` }}
+                />
+              </span>
+              <span className="truncate text-sm font-medium tabular text-ink-2">
+                <span className="sm:hidden">
+                  {snapshot.completed}/{ORDER_COUNT} done
+                </span>
+                <span className="max-sm:hidden">
+                  {snapshot.completed} of {ORDER_COUNT} handed over{seconds > ADMISSION_WINDOW_SECONDS ? ' · no new orders after 10:00' : ''}
+                </span>
+              </span>
             </div>
-          </fieldset>
+          </div>
         </div>
       </div>
 
       <p className="sr-only" role="status" aria-live="polite">
         {announcement}
       </p>
-      <Dialogs state={dialog} onClose={close} restoreFocus={() => opener.current?.focus()} snapshot={snapshot} orders={dialog ? orders : []} />
+      <Dialogs state={dialog} onClose={close} restoreFocus={() => opener.current?.focus()} snapshot={snapshot} />
     </section>
-  )
-}
-
-function Metric({ label, value, suffix, tint = false }: { label: string; value: number; suffix?: string; tint?: boolean }) {
-  return (
-    <div className="flex flex-col gap-2 rounded-card bg-paper p-6 text-ink shadow-[0_10px_24px_-14px_rgb(27_38_34/0.45)]">
-      <p className="flex items-center gap-2 text-sm font-medium text-ink-2">
-        {tint ? <OrderDot state="waiting" /> : null}
-        {label}
-      </p>
-      <p className="display text-6xl leading-[0.9] tabular">
-        {value}
-        {suffix ? <span className="ml-2 text-xl font-semibold text-ink-2">{suffix}</span> : null}
-      </p>
-    </div>
   )
 }
