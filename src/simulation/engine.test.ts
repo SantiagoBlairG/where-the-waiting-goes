@@ -1,17 +1,20 @@
 import { describe, expect, it } from 'vitest'
-import { ORDER_COUNT } from './config'
+import { ORDER_COUNT, STATIONS, serviceSecondsFor } from './config'
 import { Simulation, runToCompletion, snapshotAt } from './engine'
 import { PRESETS, fullRunResult } from './presets'
 import { completedBy, meanQueueWaitSeconds } from './metrics'
 
 const s = (seconds: number) => seconds * 1000
-const [original, cashier, barista] = PRESETS
+const [original, cashier, barista, runner] = PRESETS
 
-describe('plan fixtures (plan.md §9)', () => {
+// The model's fixtures since 2026-10-28, when service times began to vary per customer
+// (docs/simulation.md). They replace the numbers in plan.md §9.
+describe('model fixtures (docs/simulation.md)', () => {
   const expected = [
-    { preset: original, completed: 18, inside: 12, mean: 214, last: 939, waits: [58, 87, 0] },
-    { preset: cashier, completed: 18, inside: 12, mean: 214, last: 939, waits: [0, 145, 0] },
-    { preset: barista, completed: 23, inside: 7, mean: 127, last: 765, waits: [58, 0, 0] },
+    { preset: original, completed: 17, inside: 13, mean: 232, last: 982, waits: [58, 91, 10] },
+    { preset: cashier, completed: 18, inside: 12, mean: 213, last: 972, waits: [0, 130, 8] },
+    { preset: barista, completed: 21, inside: 9, mean: 142, last: 820, waits: [58, 0, 10] },
+    { preset: runner, completed: 17, inside: 13, mean: 222, last: 982, waits: [58, 91, 0] },
   ]
   for (const e of expected) {
     it(`${e.preset.name}: completed, still inside, mean, last pickup, queue waits`, () => {
@@ -24,17 +27,25 @@ describe('plan fixtures (plan.md §9)', () => {
     })
   }
 
-  it('gives every order 69 seconds of service', () => {
+  it('gives every order exactly its own service times, which average to the station averages', () => {
     const orders = runToCompletion(original.config).history
     for (const o of orders) {
-      const service = [0, 1, 2].reduce((sum, i) => sum + (o.serviceEndMs[i] - o.serviceStartMs[i]), 0)
-      expect(service).toBe(69_000)
+      for (let i = 0; i < 3; i++) expect(o.serviceEndMs[i] - o.serviceStartMs[i]).toBe(serviceSecondsFor(STATIONS[i], o.id) * 1000)
     }
+    for (const st of STATIONS) expect(st.pattern.reduce((a, b) => a + b, 0) / st.pattern.length).toBe(st.serviceSeconds)
+  })
+
+  it('gives four different outcomes, with the extra barista clearly best', () => {
+    const r = PRESETS.map((p) => fullRunResult(p))
+    expect(new Set(r.map((x) => Math.round(x.meanTotalSeconds))).size).toBe(4)
+    const best = r.reduce((a, b) => (b.meanTotalSeconds < a.meanTotalSeconds ? b : a))
+    expect(best).toBe(r[2])
   })
 
   it('shows the same totals at t=600 in the story snapshots', () => {
     const base = snapshotAt(original.config, s(600))
-    expect(base.stations.map((st) => [st.queue, st.inService])).toEqual([[4, 1], [5, 1], [0, 1]])
+    expect(base.stations.map((st) => [st.queue, st.inService])).toEqual([[4, 1], [5, 1], [1, 1]])
+    expect(base.completed).toBe(17)
     const extra = snapshotAt(cashier.config, s(600))
     expect(extra.stations.map((st) => [st.queue, st.inService])).toEqual([[0, 1], [9, 1], [0, 1]])
     expect(extra.completed).toBe(18)
@@ -118,9 +129,9 @@ describe('model invariants', () => {
   it('does not count a partial average as the cohort mean', () => {
     const sim = new Simulation(original.config)
     sim.advanceTo(s(600))
-    expect(completedBy(sim.history, s(600))).toBe(18)
+    expect(completedBy(sim.history, s(600))).toBe(17)
     // Queue-wait mean only covers completed orders and is a different number than the full run.
-    expect(meanQueueWaitSeconds(sim.history)[1]).not.toBeCloseTo(87, 0)
+    expect(meanQueueWaitSeconds(sim.history)[1]).not.toBeCloseTo(91, 0)
   })
 })
 
@@ -135,42 +146,42 @@ describe('moving the extra worker', () => {
 
   it('lets a busy worker finish the current order before moving, still counting at the old station', () => {
     const sim = new Simulation({ extra: 'order' })
-    sim.advanceTo(s(21)) // order 1 arrived at 20 and the extra worker took it (done at 44)
+    sim.advanceTo(s(61)) // order 3 arrived at 60 and the extra worker took it (done at 72)
     expect(sim.snapshot().extraWorker.busy).toBe(true)
     sim.setExtraWorker('drinks')
-    sim.advanceTo(s(30))
+    sim.advanceTo(s(66))
     let snap = sim.snapshot()
     expect(snap.extraWorker).toEqual({ at: 'order', pending: 'drinks', busy: true })
     expect(snap.stations[0].workers).toBe(2)
     expect(snap.stations[1].workers).toBe(1)
-    sim.advanceTo(s(44))
+    sim.advanceTo(s(72))
     snap = sim.snapshot()
     expect(snap.extraWorker.at).toBe('drinks')
     expect(snap.extraWorker.pending).toBeNull()
     expect(snap.stations[0].workers).toBe(1)
     expect(snap.stations[1].workers).toBe(2)
-    // The order the worker was making still finished at its station, at 44 s.
-    expect(sim.history[1].serviceEndMs[0]).toBe(s(44))
+    // The order the worker was making still finished at its station, at 72 s.
+    expect(sim.history[3].serviceEndMs[0]).toBe(s(72))
   })
 
   it('lets the latest choice win, and cancels when the current station is chosen again', () => {
     const sim = new Simulation({ extra: 'order' })
-    sim.advanceTo(s(21))
+    sim.advanceTo(s(61))
     sim.setExtraWorker('drinks')
     sim.setExtraWorker('pickup')
     expect(sim.snapshot().extraWorker.pending).toBe('pickup')
     sim.setExtraWorker('order')
     expect(sim.snapshot().extraWorker.pending).toBeNull()
-    sim.advanceTo(s(60))
+    sim.advanceTo(s(90))
     expect(sim.snapshot().extraWorker.at).toBe('order')
     expect(sim.workerEvents.map((e) => e.kind)).toEqual(['assigned', 'move-requested', 'move-requested', 'move-cancelled'])
   })
 
   it('goes off duty after finishing the current order, leaving one worker per station', () => {
     const sim = new Simulation({ extra: 'order' })
-    sim.advanceTo(s(21))
+    sim.advanceTo(s(61))
     sim.setExtraWorker('off')
-    sim.advanceTo(s(50))
+    sim.advanceTo(s(73))
     const snap = sim.snapshot()
     expect(snap.extraWorker.at).toBe('off')
     expect(snap.stations.map((st) => st.workers)).toEqual([1, 1, 1])
@@ -188,11 +199,11 @@ describe('moving the extra worker', () => {
 
   it('applies a move only when time resumes (paused assignment waits)', () => {
     const sim = new Simulation({ extra: 'order' })
-    sim.advanceTo(s(21))
+    sim.advanceTo(s(61))
     sim.setExtraWorker('pickup')
     // No time passes: the busy worker has not moved.
     expect(sim.snapshot().stations[2].workers).toBe(1)
-    sim.advanceTo(s(44))
+    sim.advanceTo(s(72))
     expect(sim.snapshot().stations[2].workers).toBe(2)
   })
 })

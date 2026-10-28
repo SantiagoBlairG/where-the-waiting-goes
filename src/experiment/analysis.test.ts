@@ -11,7 +11,7 @@ describe('demand versus capacity', () => {
   })
 
   it('shows which station limits each setup', () => {
-    expect(stationLoads('off').map((l) => l.perMinute)).toEqual([2.5, 2, 4])
+    expect(stationLoads('off').map((l) => l.perMinute)).toEqual([2.5, 2, 3])
     expect(slowestStep('off').id).toBe('drinks')
     expect(slowestStep('order').id).toBe('drinks') // an extra cashier does not help the drinks
     expect(slowestStep('drinks').id).toBe('order') // an extra barista makes ordering the next limit
@@ -40,27 +40,27 @@ describe('explanations', () => {
   it('explains the original team', () => {
     const lines = explain(original)
     expect(lines[0]).toContain('Make drinks is the slowest step at 2 orders a minute, while 3 arrive.')
-    expect(lines[2]).toContain('18 orders are picked up by 10:00')
+    expect(lines[2]).toContain('17 orders are picked up by 10:00')
   })
 
-  it('explains the extra cashier: the wait moved to the drinks, and the output did not change', () => {
+  it('explains the extra cashier: the wait moved to the drinks, and only one more coffee came out', () => {
     const lines = explain(cashier)
     expect(lines[0]).toContain('Make drinks is the slowest step')
     expect(lines[1]).toContain('the register went from 58 s to 0 s')
-    expect(lines[1]).toContain('the drinks station went from 87 s to 145 s')
-    expect(lines[2]).toContain('Still 18 orders picked up by 10:00, the same as the original team')
+    expect(lines[1]).toContain('the drinks station went from 91 s to 130 s')
+    expect(lines[2]).toContain('18 orders are picked up by 10:00, 1 more than the original team')
   })
 
-  it('explains the extra barista: drinks keep up, the register becomes the limit, five more orders', () => {
+  it('explains the extra barista: drinks keep up, the register becomes the limit, four more orders', () => {
     const lines = explain(barista)
     expect(lines[0]).toContain('Order & pay is the slowest step at 2.5 orders a minute, while 3 arrive.')
-    expect(lines[1]).toContain('the drinks station went from 87 s to 0 s')
+    expect(lines[1]).toContain('the drinks station went from 91 s to 0 s')
     expect(lines[1]).not.toContain('the register went')
-    expect(lines[2]).toContain('23 orders are picked up by 10:00, 5 more than the original team')
+    expect(lines[2]).toContain('21 orders are picked up by 10:00, 4 more than the original team')
   })
 
   it('wait shares add up to the measured waits', () => {
     const shares = waitShares(results.cashier)
-    expect(shares.map((s) => Math.round(s.seconds))).toEqual([0, 145, 0])
+    expect(shares.map((s) => Math.round(s.seconds))).toEqual([0, 130, 8])
   })
 })

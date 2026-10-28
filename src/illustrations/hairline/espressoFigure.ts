@@ -17,7 +17,7 @@ const MAX_TICKETS = 9
 export const mountEspresso: FigureMount<StationFigureState> = ({ stage, svg }, initial) => {
   const bag = disposer()
   const C = Cam(45, 0.5, 2.3)
-  fit(C, [[0, 0, 0], [112, 0, 0], [0, 54, 0], [112, 54, 0], [0, 0, 74], [112, 0, 74]], 200, 172)
+  fit(C, [[0, 0, 0], [112, 0, 0], [0, 54, 0], [112, 54, 0], [0, 0, 74], [112, 0, 74]], 200, 144)
   const P = proj(C)
   const front = facing(C)
 

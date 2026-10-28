@@ -3,6 +3,7 @@ import {
   ARRIVAL_INTERVAL_SECONDS,
   ORDER_COUNT,
   STATIONS,
+  serviceSecondsFor,
   type StationId,
 } from './config'
 import type {
@@ -15,7 +16,8 @@ import type {
 } from './types'
 
 /**
- * Deterministic discrete-event model of the coffee shop (plan.md §9).
+ * Deterministic discrete-event model of the coffee shop (plan.md §9; service times now vary per
+ * customer in a fixed repeating pattern, see config.ts).
  * No rendering, no wall clock: time only moves when advanceTo() is called, and every
  * consequence at one timestamp is settled in the order the plan fixes:
  *   1 complete services, 2 release finished orders downstream (by order id),
@@ -25,7 +27,6 @@ import type {
  */
 
 const STATION_INDEX: Record<StationId, number> = { order: 0, drinks: 1, pickup: 2 }
-const SERVICE_MS = STATIONS.map((s) => s.serviceSeconds * 1000)
 const ARRIVAL_MS = Array.from({ length: ORDER_COUNT }, (_, i) => i * ARRIVAL_INTERVAL_SECONDS * 1000)
 
 /** Workers 0, 1, 2 are the fixed workers of the three stations. Worker 3 is the flexible one. */
@@ -201,7 +202,7 @@ export class Simulation {
         const orderId = this.queues[s].shift()
         if (orderId === undefined) break
         w.orderId = orderId
-        w.busyUntilMs = this.timeMs + SERVICE_MS[s]
+        w.busyUntilMs = this.timeMs + serviceSecondsFor(STATIONS[s], orderId) * 1000
         this.orders[orderId].serviceStartMs[s] = this.timeMs
       }
     }
@@ -212,7 +213,8 @@ export class Simulation {
 export function runToCompletion(config: SimulationConfig): Simulation {
   const sim = new Simulation(config)
   // Safe upper bound: all arrivals plus every order's time through the slowest station.
-  const horizonMs = (ADMISSION_WINDOW_SECONDS + ORDER_COUNT * Math.max(...SERVICE_MS) / 1000) * 1000
+  const slowest = Math.max(...STATIONS.flatMap((s) => s.pattern))
+  const horizonMs = (ADMISSION_WINDOW_SECONDS + ORDER_COUNT * slowest) * 1000
   sim.advanceTo(horizonMs)
   return sim
 }

@@ -30,8 +30,8 @@ describe('rush playback', () => {
     expect(RUSH_STEPS).toHaveLength(31)
     expect(RUSH_STEPS[0].timeSeconds).toBe(0)
     expect(RUSH_STEPS[30].timeSeconds).toBe(600)
-    expect(RUSH_STEPS[30].completed).toBe(18)
-    expect(RUSH_STEPS[30].inShop).toBe(12)
+    expect(RUSH_STEPS[30].completed).toBe(17)
+    expect(RUSH_STEPS[30].inShop).toBe(13)
   })
 
   it('starts at t=0, ends at t=600, and only moves forward with scroll', () => {

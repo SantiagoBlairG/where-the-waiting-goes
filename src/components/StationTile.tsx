@@ -1,5 +1,5 @@
 import { memo, useMemo } from 'react'
-import { UserRound } from 'lucide-react'
+import { ArrowUpRight, UserRound } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { StationConfig, StationId } from '@/simulation/config'
 import { HairlineFigure } from '@/illustrations/hairline/HairlineFigure'
@@ -53,6 +53,9 @@ const chipTones: Record<TileChip['tone'], string> = {
   neutral: 'bg-ink/[0.06] text-ink',
 }
 
+/** A changed number or line fades up into place instead of snapping (keyed on its value). */
+const FADE = 'animate-in fade-in-0 slide-in-from-bottom-1 duration-500 ease-out motion-reduce:animate-none'
+
 /** Waiting orders as rings: twelve at most, then a "+n". */
 const MAX_DOTS = 12
 
@@ -82,7 +85,12 @@ function StationTileBase({ station, waiting, inService = 0, was, chip, workers, 
           </span>
           {station.name}
         </h3>
-        {chip ? (
+        {onOpen ? (
+          <span className="inline-flex shrink-0 items-center gap-1 text-sm font-semibold text-ink underline decoration-ink/30 decoration-2 underline-offset-4 transition-colors duration-150 group-hover:decoration-ink">
+            See details
+            <ArrowUpRight aria-hidden="true" className="size-4 transition-transform duration-200 ease-[var(--ease-out)] group-hover:-translate-y-0.5 group-hover:translate-x-0.5" strokeWidth={2.25} />
+          </span>
+        ) : chip ? (
           <span
             key={chip.text}
             className={cn(
@@ -101,14 +109,13 @@ function StationTileBase({ station, waiting, inService = 0, was, chip, workers, 
         className={cn('relative mx-4 mt-4 overflow-hidden rounded-[22px] transition-opacity duration-500', pads[station.id], dim && 'opacity-35')}
       >
         <HairlineFigure mount={figure.mount} state={figureState} label={figure.label} className="relative z-[1] mx-auto w-full max-w-[280px] wide:max-w-[min(280px,22svh)]" />
-        <span aria-hidden="true" className="absolute inset-x-[18%] bottom-[7%] h-[9%] bg-[radial-gradient(closest-side,rgb(27_38_34/0.18),transparent)]" />
       </div>
 
       <div className={cn('flex flex-col gap-2.5 px-6 pb-5 pt-4', waiting === null && 'invisible')}>
         <div className="flex items-center justify-between gap-3">
           <span className="text-sm font-semibold text-ink-2">{words.waiting}</span>
           {workers !== undefined ? (
-            <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-ink-2 tabular">
+            <span key={workers} className={cn('inline-flex items-center gap-1.5 text-sm font-semibold tabular', workers > 1 ? 'text-[#2a4a40]' : 'text-ink-2', FADE)}>
               <UserRound aria-hidden="true" className="size-4" strokeWidth={2} />
               {workers} {workers === 1 ? 'worker' : 'workers'}
             </span>
@@ -116,7 +123,9 @@ function StationTileBase({ station, waiting, inService = 0, was, chip, workers, 
         </div>
         <div className="flex min-h-[2.6rem] items-end justify-between gap-3">
           <span className="flex items-baseline gap-2.5">
-            <span className={cn('display text-[2.75rem] leading-[0.85] tabular', longer ? 'text-queue' : 'text-ink')}>{queue}</span>
+            <span key={queue} className={cn('display inline-block text-[2.75rem] leading-[0.85] tabular', longer ? 'text-queue' : 'text-ink', FADE)}>
+              {queue}
+            </span>
             {was !== undefined ? (
               <span className="text-base font-semibold text-ink-2 tabular">
                 was <span className="line-through decoration-2">{was}</span>
@@ -125,14 +134,16 @@ function StationTileBase({ station, waiting, inService = 0, was, chip, workers, 
           </span>
           <span aria-hidden="true" className="flex max-w-[8.5rem] flex-wrap justify-end gap-1.5 pb-1">
             {Array.from({ length: shown }, (_, i) => (
-              <span key={i} className="size-3 rounded-full border-2 border-queue bg-queue-tint" />
+              <span key={i} className="size-3 rounded-full border-2 border-queue bg-queue-tint animate-in fade-in-0 zoom-in-75 duration-500 ease-out motion-reduce:animate-none" />
             ))}
             {queue > MAX_DOTS ? <span className="text-xs font-semibold text-queue">+{queue - MAX_DOTS}</span> : null}
           </span>
         </div>
         <p className="flex items-center gap-2 border-t border-line pt-2.5 text-sm text-ink-2 tabular">
-          <span aria-hidden="true" className={cn('size-3 shrink-0 rounded-full', inService > 0 ? 'bg-forest' : 'border-2 border-line')} />
-          {inService > 0 ? `${inService} ${words.serving}` : words.idle}
+          <span aria-hidden="true" className={cn('size-3 shrink-0 rounded-full transition-colors duration-500', inService > 0 ? 'bg-forest' : 'border-2 border-line')} />
+          <span key={inService} className={FADE}>
+            {inService > 0 ? `${inService} ${words.serving}` : words.idle}
+          </span>
         </p>
       </div>
     </>
@@ -150,7 +161,7 @@ function StationTileBase({ station, waiting, inService = 0, was, chip, workers, 
 
   if (onOpen) {
     return (
-      <button type="button" onClick={onOpen} className={cn(surface, 'press outline-none focus-visible:ring-3 focus-visible:ring-ring/50 [@media(hover:hover)]:hover:-translate-y-1')}>
+      <button type="button" onClick={onOpen} className={cn(surface, 'press group cursor-pointer outline-none focus-visible:ring-3 focus-visible:ring-ring/50 [@media(hover:hover)]:hover:-translate-y-1')}>
         {body}
         <span className="sr-only">Open details</span>
       </button>

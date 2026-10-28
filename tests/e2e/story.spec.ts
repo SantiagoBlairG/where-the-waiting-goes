@@ -10,7 +10,7 @@ const HEADLINES = [
   'Put another person on the register.',
   'Ordering is faster. Your coffee isn’t.',
   'We didn’t remove the wait. We moved it.',
-  'And pickup? It was never the problem.',
+  'And pickup? Only the odd hiccup.',
   'Where would you put the extra person?',
 ]
 const capture = process.env.CAPTURE === '1'
@@ -59,7 +59,7 @@ test.describe('welcome and pinned story on a wide screen', () => {
     await page.getByRole('button', { name: 'See the story' }).click()
     await expect.poll(() => page.evaluate(() => window.scrollY), { timeout: 5000 }).toBeGreaterThan(900)
     await settle(page, 0)
-    await expect(tile(page, 'Order & pay')).toContainText('Your order')
+    await expect(stage(page)).toContainText('You walk in')
   })
 
   test('shows one idea per beat on the same three tiles, and restores them in reverse', async ({ page }) => {
@@ -78,7 +78,7 @@ test.describe('welcome and pinned story on a wide screen', () => {
 
     await goTo(page, 1, 0.5)
     await settle(page, 1)
-    await expect(stage(page)).toContainText('Your order is at make drinks. It takes 30 seconds here.')
+    await expect(stage(page)).toContainText('Your order is at make drinks. It takes about 30 seconds here.')
     await shot('2-three-stops')
 
     await goTo(page, 2, 0.55)
@@ -87,7 +87,7 @@ test.describe('welcome and pinned story on a wide screen', () => {
     expect(forwardClock).toBe('5:40')
     await expect(stage(page)).toContainText('so both lines grow.')
     await goTo(page, 2, 0.99)
-    await expect(stage(page)).toContainText('10:00. 18 coffees handed over, 12 customers still waiting.')
+    await expect(stage(page)).toContainText('10:00. 17 coffees handed over, 13 customers still waiting.')
     await shot('3-rush')
 
     await goTo(page, 3, 0.6)
@@ -110,7 +110,7 @@ test.describe('welcome and pinned story on a wide screen', () => {
 
     await goTo(page, 6, 0.6)
     await settle(page, 6)
-    await expect(tile(page, 'Pick up')).toContainText('4 a minute, spare')
+    await expect(tile(page, 'Pick up')).toContainText('3 a minute on average')
     await expect(tile(page, 'Pick up')).toContainText('1 being handed over')
     await shot('7-pickup')
 

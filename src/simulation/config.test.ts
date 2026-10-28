@@ -7,7 +7,7 @@ it('computes capacity as workers x 60 / service seconds', () => {
   expect(capacityPerMinute(order, 1)).toBe(2.5)
   expect(capacityPerMinute(drinks, 1)).toBe(2)
   expect(capacityPerMinute(drinks, 2)).toBe(4)
-  expect(capacityPerMinute(pickup, 1)).toBe(4)
+  expect(capacityPerMinute(pickup, 1)).toBe(3)
 })
 
 it('keeps the three stations in process order', () => {

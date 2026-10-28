@@ -1,13 +1,13 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Check, Info, Pause, Play, RotateCcw } from 'lucide-react'
 import { StationTile } from '@/components/StationTile'
 import { cn } from '@/lib/utils'
 import { ADMISSION_WINDOW_SECONDS, ORDER_COUNT, STATIONS } from '@/simulation/config'
 import { PRESETS, fullRunResult, type FullRunResult, type PresetId } from '@/simulation/presets'
 import { GLOW_BACKGROUND } from '@/story/theme'
-import { explainPreset } from './analysis'
 import { Dialogs, type DialogState } from './Dialogs'
 import { mmss } from './helpers'
+import { ResultsPanel } from './ResultsPanel'
 import { useExperiment } from './useExperiment'
 
 const ROOM = { bg: '#c8ded3', fg: '#1b2622', fg2: '#3c4d46', glowA: 'rgba(226,223,218,0.8)', glowB: 'rgba(136,164,154,0.45)' }
@@ -38,6 +38,8 @@ export function Experiment() {
   const { snapshot } = view
   const [dialog, setDialog] = useState<DialogState>(null)
   const [results, setResults] = useState<Partial<Record<PresetId, FullRunResult>>>({})
+  // Which finished run the results card shows. A run that just finished takes it.
+  const [shown, setShown] = useState<PresetId | null>(null)
   const section = useRef<HTMLElement>(null)
   const opener = useRef<HTMLElement | null>(null)
   const controls = useRef<HTMLDivElement>(null)
@@ -46,11 +48,13 @@ export function Experiment() {
   const running = view.mode === 'running'
   const complete = view.mode === 'complete'
   const seconds = snapshot.timeSeconds
-  const preset = PRESETS.find((p) => p.id === view.presetId)!
 
   // A finished run leaves its result on its tab (state adjusted during render, not in an effect).
   // The numbers are the model's full-run results, the same ones the run on screen just produced.
-  if (complete && !results[view.presetId]) setResults({ ...results, [view.presetId]: FULL[view.presetId] })
+  if (complete && !results[view.presetId]) {
+    setResults({ ...results, [view.presetId]: FULL[view.presetId] })
+    setShown(view.presetId)
+  }
 
   // Scrolling back up into the story pauses the run and keeps it; Play resumes it.
   useEffect(() => {
@@ -90,8 +94,6 @@ export function Experiment() {
     actions.play()
   }
 
-  const result = results[view.presetId]
-  const explanation = useMemo(() => (result ? explainPreset(preset, result, BASELINE) : null), [result, preset])
   const next = PRESETS.find((p) => !results[p.id] && p.id !== view.presetId)
   // The clock bar runs to the last pickup, so it is full exactly when the run is.
   const lastPickup = FULL[view.presetId].lastPickupSeconds
@@ -176,37 +178,15 @@ export function Experiment() {
                   waiting={s.queue}
                   inService={s.inService}
                   workers={s.workers}
-                  chip={s.workers > 1 ? { text: '+1 worker', tone: 'active' } : undefined}
-                  onOpen={() => open({ kind: 'station', id: station.id })}
+                    onOpen={() => open({ kind: 'station', id: station.id })}
                 />
               )
             })}
           </div>
 
-          {/* 3. The result of this setup, once its run is finished. */}
-          {complete && result && explanation ? (
-            <div className="flex flex-col gap-4 rounded-card bg-paper p-7 text-ink shadow-[0_22px_40px_-24px_rgb(27_38_34/0.5)] animate-in fade-in-0 slide-in-from-bottom-2 duration-500 motion-reduce:animate-none sm:p-9">
-              <p className="text-sm font-semibold text-forest">{preset.name}: finished</p>
-              <p className="display text-[clamp(1.8rem,3.4vw,2.8rem)] leading-tight">
-                {result.completedAtClose} of {ORDER_COUNT} coffees handed over by 10:00.
-              </p>
-              <ul className="flex max-w-[64ch] flex-col gap-1.5 text-base leading-relaxed text-ink-2">
-                {explanation.map((line) => (
-                  <li key={line}>{line}</li>
-                ))}
-              </ul>
-              {next ? (
-                <button
-                  type="button"
-                  onClick={() => actions.select(next.id)}
-                  className="press mt-2 w-fit rounded-full bg-forest px-5 py-3 text-base font-semibold text-paper outline-none transition-[background-color,scale] duration-150 hover:bg-[#2f5348] focus-visible:ring-3 focus-visible:ring-ring/50"
-                >
-                  Try {next.name.toLowerCase()} next
-                </button>
-              ) : (
-                <p className="text-base font-semibold">You have tried them all. Compare them on the tabs above.</p>
-              )}
-            </div>
+          {/* 3. The results of every finished run, switchable in place. */}
+          {shown ? (
+            <ResultsPanel results={results} baseline={BASELINE} shown={shown} onShow={setShown} next={next} onTryNext={actions.select} />
           ) : null}
 
           <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm" style={{ color: ROOM.fg2 }}>
@@ -216,7 +196,7 @@ export function Experiment() {
             <button
               type="button"
               onClick={() => open({ kind: 'how' })}
-              className="rounded-control px-1 py-2 font-semibold underline underline-offset-4 outline-none hover:opacity-75 focus-visible:ring-3 focus-visible:ring-ring/50"
+              className="cursor-pointer rounded-control px-1 py-2 font-semibold underline decoration-current/30 decoration-2 underline-offset-4 outline-none transition-colors hover:decoration-current focus-visible:ring-3 focus-visible:ring-ring/50"
               style={{ color: ROOM.fg }}
             >
               How this works
@@ -253,10 +233,10 @@ export function Experiment() {
                 />
               </span>
               <span className="truncate text-sm font-medium tabular text-ink-2">
-                <span className="sm:hidden">
+                <span key={snapshot.completed} className="inline-block animate-in fade-in-0 duration-500 motion-reduce:animate-none sm:hidden">
                   {snapshot.completed}/{ORDER_COUNT} done
                 </span>
-                <span className="max-sm:hidden">
+                <span key={-snapshot.completed - 1} className="inline-block animate-in fade-in-0 duration-500 motion-reduce:animate-none max-sm:hidden">
                   {snapshot.completed} of {ORDER_COUNT} handed over{seconds > ADMISSION_WINDOW_SECONDS ? ' · no new orders after 10:00' : ''}
                 </span>
               </span>

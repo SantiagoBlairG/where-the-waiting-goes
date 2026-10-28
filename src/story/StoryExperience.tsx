@@ -53,7 +53,7 @@ export function StoryExperience() {
   const [step, setStep] = useState<Step>(START)
   // The chapter rail belongs to the pinned story only: hide it once the story has scrolled away.
   const [onStage, setOnStage] = useState(false)
-  const live = useRef({ step: START, prevBeat: -1 })
+  const live = useRef({ step: START, prevBeat: -1, position: 0 })
 
   const scrollToBeat = useCallback((beat: number) => {
     const el = track.current
@@ -77,6 +77,7 @@ export function StoryExperience() {
         const { beat, local } = locate(progress)
         const rushIdx = beat === 2 ? rushStepIndex(local) : beat > 2 ? RUSH_STEPS.length - 1 : 0
         const position = beat === 1 ? travelPosition(local) : beat > 1 ? 2 : 0
+        live.current.position = position
         const stop = Math.round(position)
         const prev = live.current.step
         if (prev.beat !== beat || prev.rush !== rushIdx || prev.stop !== stop) {
@@ -191,6 +192,13 @@ export function StoryExperience() {
     },
     { scope: root, dependencies: [step.beat], revertOnUpdate: false },
   )
+
+  // The traced order's dot only exists once the track for its chapter has rendered. Place it as
+  // soon as it appears, so landing on the chapter in one jump does not leave it at the start.
+  useLayoutEffect(() => {
+    const dot = root.current?.querySelector('[data-trace-x]')
+    if (dot) gsap.set(dot, { xPercent: traceShare(live.current.position) * 100 })
+  }, [step.beat])
 
   const { beat } = step
   const frame = useMemo(() => frameFor(beat, { stop: step.stop, rush: RUSH_STEPS[step.rush] }), [beat, step.stop, step.rush])

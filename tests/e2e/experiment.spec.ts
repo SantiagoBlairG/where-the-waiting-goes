@@ -35,7 +35,7 @@ test.describe('the experiment', () => {
     await expect(section.locator('output')).toHaveText('0:00')
     await expect(section.getByRole('button', { name: 'Play' })).toBeVisible()
     await expect(station(page, 'Make drinks')).toContainText('2 workers')
-    await expect(station(page, 'Make drinks')).toContainText('+1 worker')
+    await expect(station(page, 'Make drinks')).toContainText('See details')
   })
 
   test('play advances the clock, pause stops it, restart returns to 0:00', async ({ page }) => {
@@ -88,34 +88,45 @@ test.describe('the experiment', () => {
     const section = await open(page)
     const runToEnd = async () => {
       await section.getByRole('button', { name: 'Play' }).click()
-      // 30x speed: the slowest setup finishes at 15:39 of simulated time, about 31 s of fake real time.
+      // 45x speed: the slowest setup finishes at 16:22 of simulated time, about 22 s of fake real time.
       for (let i = 0; i < 6 && (await section.getByRole('button', { name: 'Finished' }).count()) === 0; i++) await page.clock.runFor(8_000)
       await expect(section.getByRole('button', { name: 'Finished' })).toBeDisabled()
     }
 
     await runToEnd()
-    await expect(section).toContainText('18 of 30 coffees handed over by 10:00.')
-    await expect(section).toContainText('Make drinks is the slowest step at 2 orders a minute, while 3 arrive.')
-    await expect(tab(page, 'Original team')).toContainText('18 coffees by 10:00 · avg 3:34')
+    const results = section.getByRole('region', { name: 'Results' })
+    await expect(results).toContainText('Original team: 17 of 30 coffees handed over by 10:00.')
+    await expect(results).toContainText('All 30 coffees served in 16:22')
+    await expect(results).toContainText('Make drinks is the slowest step at 2 orders a minute, while 3 arrive.')
+    await expect(tab(page, 'Original team')).toContainText('17 coffees by 10:00 · avg 3:51')
 
     await section.getByRole('button', { name: 'Try extra cashier next' }).click()
     await expect(section.getByRole('radio', { name: /Extra cashier/ })).toBeChecked()
     await runToEnd()
-    await expect(section).toContainText('Waiting at the register went from 58 s to 0 s. Waiting at the drinks station went from 87 s to 145 s.')
-    await expect(section).toContainText('Still 18 orders picked up by 10:00, the same as the original team.')
-    await expect(tab(page, 'Extra cashier')).toContainText('18 coffees by 10:00 · avg 3:34')
+    await expect(results).toContainText('Waiting at the register went from 58 s to 0 s. Waiting at the drinks station went from 91 s to 130 s.')
+    await expect(results).toContainText('18 orders are picked up by 10:00, 1 more than the original team.')
+    await expect(results).toContainText('All 30 coffees served in 16:12 · 0:10 sooner than the original team')
+    await expect(tab(page, 'Extra cashier')).toContainText('18 coffees by 10:00 · avg 3:32')
 
     await section.getByRole('button', { name: 'Try extra barista next' }).click()
     await runToEnd()
-    await expect(section).toContainText('23 orders are picked up by 10:00, 5 more than the original team.')
-    await expect(tab(page, 'Extra barista')).toContainText('23 coffees by 10:00 · avg 2:07')
+    await expect(results).toContainText('21 orders are picked up by 10:00, 4 more than the original team.')
+    await expect(results).toContainText('All 30 coffees served in 13:40 · 2:42 sooner than the original team')
+    await expect(tab(page, 'Extra barista')).toContainText('21 coffees by 10:00 · avg 2:21')
     await section.getByRole('button', { name: 'Try extra at pickup next' }).click()
     await runToEnd()
-    await expect(section).toContainText('Pickup already had spare capacity, so the extra worker mostly stands idle.')
-    await expect(tab(page, 'Extra at pickup')).toContainText('18 coffees by 10:00 · avg 3:34')
-    await expect(section).toContainText('You have tried them all.')
-    // The earlier results stay on their tabs.
-    await expect(tab(page, 'Original team')).toContainText('18 coffees by 10:00')
+    await expect(results).toContainText('Waiting at pick up went from 10 s to 0 s.')
+    await expect(tab(page, 'Extra at pickup')).toContainText('17 coffees by 10:00 · avg 3:42')
+    await expect(results).toContainText('You have tried them all.')
+    // The earlier results stay on their tabs, and the card switches between them in place.
+    await expect(tab(page, 'Original team')).toContainText('17 coffees by 10:00')
+    await results.getByRole('button', { name: 'Extra barista' }).click()
+    await expect(results).toContainText('Extra barista: 21 of 30 coffees handed over by 10:00.')
+    // The explanation folds away and back.
+    await results.getByRole('button', { name: 'Hide why' }).click()
+    await expect(results.getByText('Order & pay is the slowest step')).toBeHidden()
+    await results.getByRole('button', { name: 'Show why' }).click()
+    await expect(results.getByText('Order & pay is the slowest step')).toBeVisible()
   })
 
   test('the run bar stays in reach while you scroll through the controls', async ({ page }) => {

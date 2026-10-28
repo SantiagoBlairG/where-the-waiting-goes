@@ -14,7 +14,7 @@ const { Cam, facing, fit, prism, proj, rings, unproj, spring, stepS, mk, put, re
 export const mountRegister: FigureMount<StationFigureState> = ({ stage, svg }, initial) => {
   const bag = disposer()
   const C = Cam(45, 0.5, 2.35)
-  fit(C, [[0, 0, 0], [122, 0, 0], [0, 50, 0], [122, 50, 0], [0, 0, 64], [122, 0, 64]], 200, 170)
+  fit(C, [[0, 0, 0], [122, 0, 0], [0, 50, 0], [122, 50, 0], [0, 0, 64], [122, 0, 64]], 200, 150)
   const P = proj(C)
   const front = facing(C)
 

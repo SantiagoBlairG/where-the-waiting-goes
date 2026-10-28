@@ -23,8 +23,8 @@ const fmt = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1))
 const words = ['zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten']
 const say = (n: number) => words[n] ?? String(n)
 const minutes = (ORDER_COUNT * ARRIVAL_INTERVAL_SECONDS) / 60
-const perMinute = 60 / ARRIVAL_INTERVAL_SECONDS
 const q = (snap: typeof baselineAtClose, i: number) => snap.stations[i].queue
+const moreThan = (d: number) => (d === 0 ? 'the same as' : d === 1 ? 'just one more than' : `${say(Math.abs(d))} ${d > 0 ? 'more' : 'fewer'} than`)
 
 export const beats: readonly Beat[] = [
   {
@@ -38,15 +38,15 @@ export const beats: readonly Beat[] = [
     id: 'three-stops',
     headline: 'Order. Make. Pick up.',
     accent: 'Pick up.',
-    support: `Every order makes the **same three stops**, in the same order: you **order and pay** (${order.serviceSeconds} s), a barista **makes the drink** (${drinks.serviceSeconds} s), then it is **handed over** (${pickup.serviceSeconds} s). One worker at each stop.`,
-    stageDescription: `Three stations in a row: Order and pay, Make drinks, Pick up. Your order moves from one to the next. They take ${order.serviceSeconds}, ${drinks.serviceSeconds} and ${pickup.serviceSeconds} seconds.`,
+    support: `Every order makes the **same three stops**: you **order and pay** (about ${order.serviceSeconds} s), a barista **makes the drink** (about ${drinks.serviceSeconds} s), then it is **handed over** (about ${pickup.serviceSeconds} s). Times vary: a card is quicker than a question, an espresso quicker than a latte. One worker at each stop.`,
+    stageDescription: `Three stations in a row: Order and pay, Make drinks, Pick up. Your order moves from one to the next. They take about ${order.serviceSeconds}, ${drinks.serviceSeconds} and ${pickup.serviceSeconds} seconds on average.`,
   },
   {
     id: 'rush',
     headline: 'Now the morning rush arrives.',
     accent: 'rush',
-    support: `**${ORDER_COUNT} customers** in ${say(minutes)} minutes: **one every ${ARRIVAL_INTERVAL_SECONDS} seconds**. The register needs ${order.serviceSeconds} and the barista ${drinks.serviceSeconds}, so both fall behind and **lines start to grow**.`,
-    stageDescription: `The rush clock runs from 0:00 to 10:00. Lines grow at Order and pay and at Make drinks. Pick up never has a line. At 10:00, ${baselineAtClose.completed} coffees are handed over and ${baselineAtClose.inShop} customers are still waiting.`,
+    support: `**${ORDER_COUNT} customers** in ${say(minutes)} minutes: **one every ${ARRIVAL_INTERVAL_SECONDS} seconds**. The register needs about ${order.serviceSeconds} and the barista about ${drinks.serviceSeconds}, so both fall behind and **lines start to grow**.`,
+    stageDescription: `The rush clock runs from 0:00 to 10:00. Lines grow at Order and pay and at Make drinks; Pick up has a short line now and then. At 10:00, ${baselineAtClose.completed} coffees are handed over and ${baselineAtClose.inShop} customers are still waiting.`,
   },
   {
     id: 'fix',
@@ -59,8 +59,8 @@ export const beats: readonly Beat[] = [
     id: 'surprise',
     headline: 'Ordering is faster. Your coffee isn’t.',
     accent: 'isn’t.',
-    support: `By 10:00 both cafés have handed over **${baselineAtClose.completed} coffees**, exactly the same. With two cashiers, **${q(cashierAtClose, 1)} drinks** now wait at the barista, up from ${q(baselineAtClose, 1)}. The wait did not disappear.`,
-    stageDescription: `Make drinks is highlighted: ${q(cashierAtClose, 1)} drinks waiting, up from ${q(baselineAtClose, 1)}. Both cafés have handed over ${baselineAtClose.completed} coffees.`,
+    support: `By 10:00 the café with two cashiers has handed over **${cashierAtClose.completed} coffees**, ${moreThan(cashierAtClose.completed - baselineAtClose.completed)} ${baselineAtClose.completed}. But **${q(cashierAtClose, 1)} drinks** now wait at the barista, up from ${q(baselineAtClose, 1)}. The wait did not disappear.`,
+    stageDescription: `Make drinks is highlighted: ${q(cashierAtClose, 1)} drinks waiting, up from ${q(baselineAtClose, 1)}. Coffees handed over: ${cashierAtClose.completed} with two cashiers, ${baselineAtClose.completed} without.`,
   },
   {
     id: 'reveal',
@@ -71,10 +71,10 @@ export const beats: readonly Beat[] = [
   },
   {
     id: 'pickup',
-    headline: 'And pickup? It was never the problem.',
-    accent: 'never',
-    support: `Handing over a drink takes ${pickup.serviceSeconds} seconds, so the one worker at pickup manages **${fmt(capacityPerMinute(pickup, 1))} a minute**, more than the ${fmt(perMinute)} customers who arrive. Drinks reach pickup only as fast as they are made, so there is **never a line here**.`,
-    stageDescription: `Pick up is highlighted: one worker, no drinks waiting, one being handed over. It can hand over ${fmt(capacityPerMinute(pickup, 1))} a minute.`,
+    headline: 'And pickup? Only the odd hiccup.',
+    accent: 'hiccup.',
+    support: `Most handovers take seconds, but now and then one takes much longer: a name called twice, a missing lid. Then a **short line** forms. On average one worker keeps up, **${fmt(capacityPerMinute(pickup, 1))} a minute**, as many as arrive, and drinks only reach pickup as fast as they are made.`,
+    stageDescription: `Pick up is highlighted: one worker, ${q(baselineAtClose, 2)} drink waiting, one being handed over. On average it hands over ${fmt(capacityPerMinute(pickup, 1))} a minute.`,
   },
   {
     id: 'your-turn',

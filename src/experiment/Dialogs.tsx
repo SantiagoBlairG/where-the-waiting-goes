@@ -50,7 +50,7 @@ function StationDetail({ id, snapshot, onCloseAutoFocus }: { id: StationId; snap
       </DialogHeader>
       <dl className="grid grid-cols-2 gap-x-6 gap-y-4 text-base">
         <div>
-          <dt className="text-sm text-ink-2">Service time</dt>
+          <dt className="text-sm text-ink-2">Service time (average)</dt>
           <dd className="display text-3xl tabular">{station.serviceSeconds} s</dd>
         </div>
         <div>
@@ -74,7 +74,7 @@ function StationDetail({ id, snapshot, onCloseAutoFocus }: { id: StationId; snap
         </p>
       </div>
       <p className="text-base leading-relaxed text-ink-2">
-        One worker finishes an order every {station.serviceSeconds} seconds, which is {perWorker % 1 === 0 ? perWorker : perWorker.toFixed(1)} a
+        Orders take {station.pattern.join(', ')} seconds in turn here, about {station.serviceSeconds} on average, so one worker finishes about {perWorker % 1 === 0 ? perWorker : perWorker.toFixed(1)} a
         minute. A second worker doubles that, as long as the equipment and space can take them.
       </p>
     </DialogContent>
@@ -97,10 +97,11 @@ function HowItWorks({ onCloseAutoFocus }: CloseProps) {
           Every order visits {STATIONS.map((s) => s.name).join(', then ')}. One worker at a station serves one order at a time, first come, first served.
         </li>
         <li>
-          Service takes {STATIONS.map((s) => `${s.serviceSeconds} seconds at ${s.name}`).join(', ')}.
+          Service takes about {STATIONS.map((s) => `${s.serviceSeconds} seconds at ${s.name}`).join(', ')} on average. Customers differ in a fixed repeating pattern
+          (for example {STATIONS[1].pattern.join(', ')} seconds for three drinks in a row), so every run of the same setup is identical.
         </li>
         <li>An extra worker has the equipment and space they need. The model does not show two baristas sharing one machine.</li>
-        <li>There is no randomness, no breaks and no travel time, so the same setup always gives the same result.</li>
+        <li>There is no randomness, no breaks and no travel time.</li>
         <li>Moving a worker who is busy waits until they finish the order they are making.</li>
       </ul>
     </DialogContent>

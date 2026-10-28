@@ -11,7 +11,7 @@ Scroll-driven coffee-shop story followed by one interactive bottleneck experimen
 
 - **Story first.** Build and finish the scroll story (plan.md §7) before the interactive workspace. Never open with a dashboard, settings or controls.
 - **Skills at their phases**, not all at once: Taste (art direction, Phase 1 and final review), Hairline (illustrations, Phase 2), Impeccable (shape/clarify/critique in Phase 1; adapt/harden/audit/optimize then polish in Phase 6). Read the installed `SKILL.md` before using each. Conflicts resolve in this order: story clarity, accessibility, truthful data, established visual direction. A skill suggesting more effects is not permission to add them.
-- **Simulation is pure TypeScript** in `src/simulation/`, with no formulas in UI components. UI numbers must come from the model, never hardcoded. Fixtures in plan.md §9 must pass.
+- **Simulation is pure TypeScript** in `src/simulation/`, with no formulas in UI components. UI numbers must come from the model, never hardcoded. The fixtures in docs/simulation.md must pass (they replaced plan.md §9 on 2026-10-28, at the client's request: service times vary per customer).
 - **One animation engine** (GSAP). No two engines write the same element's transform. Keep a motion-ownership note per animated component.
 - **Out of scope** (do not add): Next.js, router, Three.js, a second animation library, smooth-scroll hijacking, chart library, backend, demand sliders and the other items in plan.md §2 "Defer".
 - Tailwind v4 only (no v3 config). Alias `@/` maps to `src/`.

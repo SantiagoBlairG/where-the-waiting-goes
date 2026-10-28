@@ -9,8 +9,9 @@ describe('story frames', () => {
     for (let b = 0; b < BEAT_COUNT; b++) expect(frameFor(b).tiles.map((t) => t.id)).toEqual(['order', 'drinks', 'pickup'])
   })
 
-  it('opens with only the first stop, then all three', () => {
-    expect(frameFor(0).tiles.map((t) => t.visible)).toEqual([true, false, false])
+  it('opens with the walk-in picture, then all three stops', () => {
+    expect(frameFor(0).opening).toBe(true)
+    expect(frameFor(0).tiles.map((t) => t.visible)).toEqual([false, false, false])
     for (let b = 1; b < BEAT_COUNT; b++) expect(frameFor(b).tiles.every((t) => t.visible)).toBe(true)
   })
 
@@ -28,7 +29,7 @@ describe('story frames', () => {
     const f = frameFor(2, { rush: snap })
     expect(f.tiles.map((t) => t.waiting)).toEqual(snap.stations.map((s) => s.queue))
     expect(f.track).toMatchObject({ kind: 'clock', seconds: snap.timeSeconds })
-    expect(rushCaption(RUSH_STEPS[30])).toBe('10:00. 18 coffees handed over, 12 customers still waiting.')
+    expect(rushCaption(RUSH_STEPS[30])).toBe('10:00. 17 coffees handed over, 13 customers still waiting.')
   })
 
   it('shows the fix and the surprise as before and after on one tile', () => {
@@ -38,10 +39,10 @@ describe('story frames', () => {
     expect(surprise).toMatchObject({ waiting: 9, was: 5, highlight: true })
   })
 
-  it('shows pickup working but never waiting, with its spare capacity', () => {
+  it('shows pickup working, with a short line after a slow handover', () => {
     const p = frameFor(6).tiles[2]
-    expect(p).toMatchObject({ waiting: 0, inService: 1, workers: 1, highlight: true })
-    expect(p.chip?.text).toBe('4 a minute, spare')
+    expect(p).toMatchObject({ waiting: 1, inService: 1, workers: 1, highlight: true })
+    expect(p.chip?.text).toBe('3 a minute on average')
   })
 
   it('puts the reveal on the drinks, with its capacity from the model', () => {

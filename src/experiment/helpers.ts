@@ -37,8 +37,8 @@ export function insightFor(destination: ExtraPlacement): string {
     case 'drinks':
       return 'Drinks can now keep up. Ordering becomes the next limit.'
     case 'pickup':
-      return 'Pickup already has spare capacity. Another person here will not increase output in this model.'
+      return 'Pickup keeps up on average. Another worker here only clears the odd short line after a slow handover.'
     default:
-      return 'One person at each step. Drinks, at 2 orders a minute, is the slowest step.'
+      return 'One worker at each stop. Drinks, at about 2 orders a minute, is the slowest step.'
   }
 }

@@ -44,8 +44,9 @@ describe('presets and reset', () => {
 
   it('turns a pending move into the starting allocation on restart', () => {
     const s = new ExperimentSession('cashier')
+    s.setSpeed(1)
     s.play()
-    for (let i = 0; i < 22; i++) s.tick(100) // 22 s simulated: the extra cashier took order 1 at 20 s and is busy until 44 s
+    for (let i = 0; i < 610; i++) s.tick(100) // 61 s: the extra cashier took the fourth customer at 60 s and is busy until 72 s
     s.assignExtra('pickup')
     expect(s.snapshot().extraWorker.pending).toBe('pickup')
     s.restart()
@@ -61,11 +62,11 @@ describe('playback', () => {
     expect(s.timeMs).toBe(0)
   })
 
-  it('runs at 30x by default and at 1x on request, without changing the result', () => {
+  it('runs at 45x by default and at 1x on request, without changing the result', () => {
     const a = new ExperimentSession('cashier')
     a.play()
     for (let i = 0; i < 20; i++) a.tick(50) // 1 s real
-    expect(a.timeMs).toBe(30_000)
+    expect(a.timeMs).toBe(45_000)
 
     const b = new ExperimentSession('cashier')
     b.setSpeed(1)
@@ -88,7 +89,7 @@ describe('playback', () => {
     const s = new ExperimentSession()
     s.play()
     s.tick(60_000) // a minute of real time passed since the last frame
-    expect(s.timeMs).toBe(MAX_TICK_MS * 30)
+    expect(s.timeMs).toBe(MAX_TICK_MS * 45)
   })
 
   it('is complete only when all 30 orders have left, and then stays complete', () => {
@@ -164,8 +165,9 @@ describe('moving the extra worker', () => {
     expect(s.snapshot().stations[1].workers).toBe(2) // idle: moved immediately
 
     const t = new ExperimentSession('cashier')
+    t.setSpeed(1)
     t.play()
-    for (let i = 0; i < 44; i++) t.tick(50) // 22 s: the extra cashier is serving order 1
+    for (let i = 0; i < 1220; i++) t.tick(50) // 61 s: the extra cashier is serving the fourth customer (60 to 72 s)
     t.pause()
     t.assignExtra('drinks')
     expect(t.snapshot().extraWorker).toMatchObject({ at: 'order', pending: 'drinks', busy: true })
@@ -173,7 +175,7 @@ describe('moving the extra worker', () => {
     t.tick(50)
     expect(t.timeMs).toBe(before) // paused: the pending move waits
     t.play()
-    for (let i = 0; i < 60; i++) t.tick(50) // 30 s more: past 44 s, when the order finishes
+    for (let i = 0; i < 240; i++) t.tick(50) // 12 s more: past 72 s, when the busy worker finished, so the move applied
     expect(t.snapshot().extraWorker.at).toBe('drinks')
   })
 

@@ -21,7 +21,7 @@ const falloff = (d: number) => (d === 0 ? 1 : d === 1 ? 0.34 : d === 2 ? 0.1 : 0
 export const mountPickup: FigureMount<StationFigureState> = ({ stage, svg }, initial) => {
   const bag = disposer()
   const C = Cam(45, 0.5, 2.45)
-  fit(C, [[0, 0, 0], [112, 0, 0], [0, 40, 0], [112, 40, 0], [0, 0, 60], [112, 0, 60]], 200, 172)
+  fit(C, [[0, 0, 0], [112, 0, 0], [0, 40, 0], [112, 40, 0], [0, 0, 60], [112, 0, 60]], 200, 132)
   const P = proj(C)
   const front = facing(C)
 

@@ -9,7 +9,7 @@ describe('capacity if assigned', () => {
     expect(capacityIfExtraAt('order', 'order')).toBe(5)
     expect(capacityIfExtraAt('drinks', 'off')).toBe(2)
     expect(capacityIfExtraAt('drinks', 'drinks')).toBe(4)
-    expect(capacityIfExtraAt('pickup', 'pickup')).toBe(8)
+    expect(capacityIfExtraAt('pickup', 'pickup')).toBe(6)
     expect(capacityIfExtraAt('drinks', 'order')).toBe(2) // an extra worker elsewhere does not help drinks
   })
 })
@@ -30,7 +30,7 @@ describe('insights', () => {
       expect(text.toLowerCase()).not.toContain('no queue')
     }
     expect(insightFor('drinks')).toContain('Ordering becomes the next limit')
-    expect(insightFor('pickup')).toContain('spare capacity')
+    expect(insightFor('pickup')).toContain('odd short line')
   })
 
   it('quotes the drinks rate from the model, not from memory', () => {

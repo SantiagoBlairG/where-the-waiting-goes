@@ -1,5 +1,7 @@
 import { memo } from 'react'
 import { StationTile } from '@/components/StationTile'
+import { HairlineFigure } from '@/illustrations/hairline/HairlineFigure'
+import { mountWalkIn } from '@/illustrations/hairline/walkInFigure'
 import { cn } from '@/lib/utils'
 import { ADMISSION_WINDOW_SECONDS, STATIONS } from '@/simulation/config'
 import { clockText, traceShare, type StageFrame, type TrackFrame } from './frames'
@@ -16,7 +18,8 @@ import { clockText, traceShare, type StageFrame, type TrackFrame } from './frame
 export const StoryStage = memo(function StoryStage({ frame, tracePosition, phoneCompact = false }: { frame: StageFrame; tracePosition?: number; phoneCompact?: boolean }) {
   return (
     <div className="flex w-full flex-col gap-7">
-      <div className="grid w-full gap-4 sm:grid-cols-3 sm:gap-5 wide:gap-7">
+      <div className="relative grid w-full gap-4 sm:grid-cols-3 sm:gap-5 wide:gap-7">
+        <OpeningCard shown={frame.opening} />
         {frame.tiles.map((t, i) => (
           <div
             key={t.id}
@@ -46,6 +49,45 @@ export const StoryStage = memo(function StoryStage({ frame, tracePosition, phone
     </div>
   )
 })
+
+/**
+ * The first chapter's picture: walking in, three stops, the cup at the end. It lies over the
+ * tiles' space (which keeps its size, hidden), so the tiles rise into the same place on the next
+ * chapter without anything moving. On phones, where hidden tiles take no space, it sits in the flow.
+ * Motion ownership: CSS opacity and translate on the card; the figure's own springs inside its svg.
+ */
+function OpeningCard({ shown }: { shown?: boolean }) {
+  return (
+    <div
+      aria-hidden={!shown || undefined}
+      className={cn(
+        'transition-[opacity,translate] duration-700 ease-[var(--ease-out)] motion-reduce:transition-none sm:absolute sm:inset-0 sm:z-[1]',
+        shown ? 'opacity-100' : 'pointer-events-none -translate-y-4 opacity-0 max-sm:hidden',
+      )}
+    >
+      <article
+        aria-label="Walking in for a coffee"
+        className="flex h-full flex-col overflow-hidden rounded-card bg-paper text-ink shadow-[0_1px_2px_rgb(27_38_34/0.06),0_22px_40px_-22px_rgb(27_38_34/0.45)]"
+      >
+        <header className="flex min-h-11 items-center justify-between gap-3 px-6 pt-5">
+          <p className="flex items-baseline gap-3 font-display text-[1.3rem] font-semibold leading-none">
+            <span className="display text-[2.3rem] leading-[0.8] text-forest tabular">8:45</span>
+            You walk in
+          </p>
+          <span className="whitespace-nowrap rounded-full bg-forest px-3 py-1.5 text-[0.8rem] font-semibold text-paper">Your order</span>
+        </header>
+        <div className="mx-4 mb-4 mt-4 flex min-h-0 flex-1 items-center justify-center overflow-hidden rounded-[22px] bg-[#dfeae4]">
+          <HairlineFigure
+            mount={mountWalkIn}
+            state={null}
+            label="A café doorway, three stepping stones for the three stops, and a cup waiting on the counter at the end"
+            className="aspect-[5/4] w-full max-w-[460px] sm:h-full sm:w-auto sm:max-w-none"
+          />
+        </div>
+      </article>
+    </div>
+  )
+}
 
 /* The caption pill carries a denser veil than other glass (bg-white/75): it sits on every room,
    including the deep forest one, and its small text must keep 4.5:1 there. */

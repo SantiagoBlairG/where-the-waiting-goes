@@ -30,7 +30,7 @@ export type TrackFrame =
   /** A plain caption under the stage. */
   | { kind: 'caption'; caption: string }
 
-export type StageFrame = { tiles: TileFrame[]; track: TrackFrame | null }
+export type StageFrame = { tiles: TileFrame[]; track: TrackFrame | null; /** The first chapter shows the walk-in picture instead of tiles. */ opening?: boolean }
 
 const IDS: readonly StationId[] = ['order', 'drinks', 'pickup']
 const [order, drinks, pickup] = STATIONS
@@ -57,13 +57,13 @@ const countsFrom = (snap: Snapshot, id: StationId) => {
 /** The traced order: where it is and how long that stop takes. */
 export function stopCaption(stop: number): string {
   const s = STATIONS[Math.max(0, Math.min(2, stop))]
-  return `Your order is at ${s.name.toLowerCase()}. It takes ${s.serviceSeconds} seconds here.`
+  return `Your order is at ${s.name.toLowerCase()}. It takes about ${s.serviceSeconds} seconds here.`
 }
 
 /** The rush, in three phases, one sentence each. */
 export function rushCaption(snap: Snapshot): string {
   if (snap.timeSeconds < 100)
-    return `Each ring is one customer's order waiting. A new customer comes every ${ARRIVAL_INTERVAL_SECONDS} seconds; the register needs ${order.serviceSeconds}.`
+    return `Each ring is one customer's order waiting. A new customer comes every ${ARRIVAL_INTERVAL_SECONDS} seconds; the register needs about ${order.serviceSeconds}.`
   if (snap.timeSeconds < 600) return 'Customers arrive faster than orders can be taken and drinks made, so both lines grow.'
   return `10:00. ${snap.completed} coffees handed over, ${snap.inShop} customers still waiting.`
 }
@@ -74,8 +74,9 @@ export function frameFor(beat: number, opts: { stop?: number; rush?: Snapshot } 
   switch (beats[beat]?.id) {
     case 'familiar':
       return {
-        tiles: IDS.map((id, i) => tile(id, { visible: i === 0, highlight: i === 0, chip: i === 0 ? { text: 'Your order', tone: 'active' } : undefined })),
+        tiles: IDS.map((id) => tile(id, { visible: false })),
         track: null,
+        opening: true,
       }
     case 'three-stops':
       return {
@@ -120,10 +121,10 @@ export function frameFor(beat: number, opts: { stop?: number; rush?: Snapshot } 
       return {
         tiles: IDS.map((id) =>
           id === 'pickup'
-            ? at(baselineAtClose, id, { highlight: true, chip: { text: `${fmt(capacityPerMinute(pickup, 1))} a minute, spare`, tone: 'active' } })
+            ? at(baselineAtClose, id, { highlight: true, chip: { text: `${fmt(capacityPerMinute(pickup, 1))} a minute on average`, tone: 'active' } })
             : at(baselineAtClose, id, { dim: true }),
         ),
-        track: { kind: 'caption', caption: `One worker hands over ${fmt(capacityPerMinute(pickup, 1))} drinks a minute, more than ever reach pickup.` },
+        track: { kind: 'caption', caption: 'A slow handover now and then makes a short line. Then it clears.' },
       }
     default:
       return { tiles: IDS.map((id) => at(startOfRush, id)), track: null }
