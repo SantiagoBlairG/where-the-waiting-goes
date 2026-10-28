@@ -41,6 +41,7 @@ export const StoryStage = memo(function StoryStage({ frame, tracePosition, phone
               dim={t.dim}
               highlight={t.highlight}
               workers={t.workers}
+              about={t.about}
             />
           </div>
         ))}

@@ -21,7 +21,8 @@ describe('story frames', () => {
       expect(tiles.map((t) => t.highlight)).toEqual([0, 1, 2].map((i) => i === stop))
       expect(tiles.map((t) => t.dim)).toEqual([0, 1, 2].map((i) => i !== stop))
     }
-    expect(stopCaption(1)).toContain('30 seconds')
+    expect(stopCaption(1)).toBe('Your order is at make drinks. Next: pick up.')
+    expect(frameFor(1).tiles.every((t) => t.about)).toBe(true)
   })
 
   it('reads the rush counts and clock from the engine', () => {
@@ -42,12 +43,12 @@ describe('story frames', () => {
   it('shows pickup working, with a short line after a slow handover', () => {
     const p = frameFor(6).tiles[2]
     expect(p).toMatchObject({ waiting: 1, inService: 1, workers: 1, highlight: true })
-    expect(p.chip?.text).toBe('3 a minute on average')
+    expect(p.chip?.text).toBe('~3 a minute')
   })
 
   it('puts the reveal on the drinks, with its capacity from the model', () => {
     const drinks = frameFor(5).tiles[1]
-    expect(drinks.chip?.text).toBe('2 drinks a minute')
+    expect(drinks.chip?.text).toBe('2 a minute')
     expect(frameFor(5).tiles.filter((t) => t.highlight)).toHaveLength(1)
   })
 

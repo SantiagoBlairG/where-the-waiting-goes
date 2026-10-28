@@ -95,6 +95,8 @@ test.describe('the experiment', () => {
 
     await runToEnd()
     const results = section.getByRole('region', { name: 'Results' })
+    // The finished run's result is brought into view by itself.
+    await expect(results).toBeInViewport()
     await expect(results).toContainText('Original team: 17 of 30 coffees handed over by 10:00.')
     await expect(results).toContainText('All 30 coffees served in 16:22')
     await expect(results).toContainText('Make drinks is the slowest step at 2 orders a minute, while 3 arrive.')

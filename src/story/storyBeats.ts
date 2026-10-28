@@ -38,7 +38,7 @@ export const beats: readonly Beat[] = [
     id: 'three-stops',
     headline: 'Order. Make. Pick up.',
     accent: 'Pick up.',
-    support: `Every order makes the **same three stops**: you **order and pay** (about ${order.serviceSeconds} s), a barista **makes the drink** (about ${drinks.serviceSeconds} s), then it is **handed over** (about ${pickup.serviceSeconds} s). Times vary: a card is quicker than a question, an espresso quicker than a latte. One worker at each stop.`,
+    support: `Every order makes the **same three stops**: you **order and pay**, a barista **makes the drink**, then it is **handed over**. **Times vary** from customer to customer, and there is **one worker** at each stop.`,
     stageDescription: `Three stations in a row: Order and pay, Make drinks, Pick up. Your order moves from one to the next. They take about ${order.serviceSeconds}, ${drinks.serviceSeconds} and ${pickup.serviceSeconds} seconds on average.`,
   },
   {

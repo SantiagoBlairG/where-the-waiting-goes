@@ -15,12 +15,16 @@ export type StationConfig = {
    * Deterministic, so the same setup always gives the same result. Averages to serviceSeconds.
    */
   pattern: readonly number[]
+  /** What each customer in the pattern is, in a word or two (shown under each time). */
+  kinds: readonly string[]
+  /** What happens at this stop, in one short sentence. */
+  does: string
 }
 
 export const STATIONS: readonly StationConfig[] = [
-  { id: 'order', step: 1, name: 'Order & pay', serviceSeconds: 24, pattern: [12, 18, 42] },
-  { id: 'drinks', step: 2, name: 'Make drinks', serviceSeconds: 30, pattern: [18, 26, 46] },
-  { id: 'pickup', step: 3, name: 'Pick up', serviceSeconds: 20, pattern: [6, 10, 44] },
+  { id: 'order', step: 1, name: 'Order & pay', serviceSeconds: 24, pattern: [12, 18, 42], kinds: ['card', 'cash', 'question'], does: 'You order and pay at the till.' },
+  { id: 'drinks', step: 2, name: 'Make drinks', serviceSeconds: 30, pattern: [18, 26, 46], kinds: ['espresso', 'flat white', 'latte'], does: 'A barista makes your drink.' },
+  { id: 'pickup', step: 3, name: 'Pick up', serviceSeconds: 20, pattern: [6, 10, 44], kinds: ['ready', 'ready', 'mix-up'], does: 'Your name is called out.' },
 ]
 
 export const ORDER_COUNT = 30

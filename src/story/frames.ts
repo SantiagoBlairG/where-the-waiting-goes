@@ -16,6 +16,8 @@ export type TileFrame = {
   waiting: number | null
   inService: number
   workers?: number
+  /** Show what the stop is (customer times, what happens) instead of counts. */
+  about?: boolean
   was?: number
   chip?: TileChip
   dim: boolean
@@ -57,7 +59,7 @@ const countsFrom = (snap: Snapshot, id: StationId) => {
 /** The traced order: where it is and how long that stop takes. */
 export function stopCaption(stop: number): string {
   const s = STATIONS[Math.max(0, Math.min(2, stop))]
-  return `Your order is at ${s.name.toLowerCase()}. It takes about ${s.serviceSeconds} seconds here.`
+  return stop >= 2 ? `Your order is at ${s.name.toLowerCase()}, the last stop.` : `Your order is at ${s.name.toLowerCase()}. Next: ${STATIONS[stop + 1].name.toLowerCase()}.`
 }
 
 /** The rush, in three phases, one sentence each. */
@@ -80,7 +82,9 @@ export function frameFor(beat: number, opts: { stop?: number; rush?: Snapshot } 
       }
     case 'three-stops':
       return {
-        tiles: IDS.map((id, i) => tile(id, { highlight: i === stop, dim: i !== stop })),
+        tiles: IDS.map((id, i) =>
+          tile(id, { highlight: i === stop, dim: i !== stop, about: true, workers: 1 }),
+        ),
         track: { kind: 'trace', caption: stopCaption(stop) },
       }
     case 'rush': {
@@ -112,7 +116,7 @@ export function frameFor(beat: number, opts: { stop?: number; rush?: Snapshot } 
       return {
         tiles: IDS.map((id) =>
           id === 'drinks'
-            ? at(cashierAtClose, id, { highlight: true, chip: { text: `${fmt(capacityPerMinute(drinks, 1))} drinks a minute`, tone: 'queue' } })
+            ? at(cashierAtClose, id, { highlight: true, chip: { text: `${fmt(capacityPerMinute(drinks, 1))} a minute`, tone: 'queue' } })
             : at(cashierAtClose, id, { dim: true }),
         ),
         track: { kind: 'caption', caption: `${fmt(ARRIVALS_PER_MINUTE)} customers arrive a minute. The drinks can only finish ${fmt(capacityPerMinute(drinks, 1))}.` },
@@ -121,7 +125,7 @@ export function frameFor(beat: number, opts: { stop?: number; rush?: Snapshot } 
       return {
         tiles: IDS.map((id) =>
           id === 'pickup'
-            ? at(baselineAtClose, id, { highlight: true, chip: { text: `${fmt(capacityPerMinute(pickup, 1))} a minute on average`, tone: 'active' } })
+            ? at(baselineAtClose, id, { highlight: true, chip: { text: `~${fmt(capacityPerMinute(pickup, 1))} a minute`, tone: 'active' } })
             : at(baselineAtClose, id, { dim: true }),
         ),
         track: { kind: 'caption', caption: 'A slow handover now and then makes a short line. Then it clears.' },

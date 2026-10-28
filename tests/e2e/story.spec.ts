@@ -78,7 +78,9 @@ test.describe('welcome and pinned story on a wide screen', () => {
 
     await goTo(page, 1, 0.5)
     await settle(page, 1)
-    await expect(stage(page)).toContainText('Your order is at make drinks. It takes about 30 seconds here.')
+    await expect(stage(page)).toContainText('Your order is at make drinks. Next: pick up.')
+    await expect(tile(page, 'Make drinks')).toContainText('about 30 s each')
+    await expect(tile(page, 'Make drinks')).toContainText('A barista makes your drink.')
     await shot('2-three-stops')
 
     await goTo(page, 2, 0.55)
@@ -105,12 +107,12 @@ test.describe('welcome and pinned story on a wide screen', () => {
 
     await goTo(page, 5, 0.6)
     await settle(page, 5)
-    await expect(tile(page, 'Make drinks')).toContainText('2 drinks a minute')
+    await expect(tile(page, 'Make drinks')).toContainText('2 a minute')
     await shot('6-reveal')
 
     await goTo(page, 6, 0.6)
     await settle(page, 6)
-    await expect(tile(page, 'Pick up')).toContainText('3 a minute on average')
+    await expect(tile(page, 'Pick up')).toContainText('~3 a minute')
     await expect(tile(page, 'Pick up')).toContainText('1 being handed over')
     await shot('7-pickup')
 

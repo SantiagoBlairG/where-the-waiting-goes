@@ -250,3 +250,11 @@ Done:
 Verified on the production build: typecheck and lint clean; 69 unit tests (engine fixtures rewritten from the engine itself and cross-checked against an independent copy); Playwright 34 passed, 12 skipped by design (including all four runs, the outcome switch and the fold); layout sweep clean at 1920x1080, 1440x900, 1366x768, 1100x700, 768x1024, 390x844 and 320x640; axe 0 violations; contrast no fails across 212 text styles; keyboard walk passes.
 
 Not verified: Safari, Firefox, real phones, a screen reader, the comprehension gate; the walk-in figure was not run through the Hairline skill's own `look.mjs` bench (it lives in the app on the vendored kernel, like the other three figures), so its tour was not judged.
+
+## Round 4 (2026-10-28)
+
+- **Three-stops cards are no longer empty below the picture.** On that chapter each card shows what the stop is: a tag "about 24 s each", the three repeating customer times with what they are (12 s card · 18 s cash · 42 s question; 18 s espresso · 26 s flat white · 46 s latte; 6 s ready · 10 s ready · 44 s mix-up), the worker count, and one line on what happens there. The labels live next to the times in `config.ts` (`kinds`, `does`). The chapter description no longer lists times, and the caption under the stage now says where the order goes next.
+- **Tiles never change size between chapters, at any width.** Measured on chapters 2, 3, 4, 6 and 8: every tile is 382 px at 1440x900, 347 px at 1100x700 and 343 px at 960x680. To get there: the time tag sits in the card body, not the header (it pushed "Make drinks" onto two lines at 1100 px); header names and the first footer row never wrap; chips are shorter ("2 a minute", "~3 a minute"); tiles in a row share a height; side padding is 20 px below 1280 px wide.
+- **A finished run scrolls its result into view**, the same way Play brings the stage into view. Only a newly finished run does it, not switching between results.
+
+Verified on the production build: 69 unit tests; Playwright 34 passed, 12 skipped (now also checks that the result is in view after a run); layout sweep clean at 1440x900, 1100x700, 960x680, 390x844 and 320x640; axe 0 violations; contrast no fails across 238 text styles.

@@ -21,6 +21,11 @@ export type StationTileProps = {
   chip?: TileChip
   /** Workers at this station. */
   workers?: number
+  /**
+   * Show what the stop is instead of its counts: each customer's time in the repeating pattern
+   * and what happens there. Used where the story introduces the stops.
+   */
+  about?: boolean
   dim?: boolean
   highlight?: boolean
   /** Opens the station's details. The whole tile becomes the button. */
@@ -68,7 +73,7 @@ const MAX_DOTS = 12
  * Motion ownership: CSS only (background, translate and scale transitions on the tile). GSAP
  * never writes to it; the Hairline figure animates inside its own svg.
  */
-function StationTileBase({ station, waiting, inService = 0, was, chip, workers, dim = false, highlight = false, onOpen, className }: StationTileProps) {
+function StationTileBase({ station, waiting, inService = 0, was, chip, workers, about = false, dim = false, highlight = false, onOpen, className }: StationTileProps) {
   const figure = figures[station.id]
   const words = WORDS[station.id]
   const queue = waiting ?? 0
@@ -78,8 +83,8 @@ function StationTileBase({ station, waiting, inService = 0, was, chip, workers, 
 
   const body = (
     <>
-      <header className="flex min-h-11 items-center justify-between gap-3 px-6 pt-5">
-        <h3 className="flex items-baseline gap-2.5 font-display text-[1.3rem] font-semibold leading-none">
+      <header className="flex min-h-11 items-center justify-between gap-2 px-5 pt-5 xl:gap-3 xl:px-6">
+        <h3 className="flex items-baseline gap-2.5 whitespace-nowrap font-display text-[1.3rem] font-semibold leading-none">
           <span aria-hidden="true" className={cn('display text-[2.3rem] leading-[0.8]', numerals[station.id])}>
             {station.step}
           </span>
@@ -94,7 +99,7 @@ function StationTileBase({ station, waiting, inService = 0, was, chip, workers, 
           <span
             key={chip.text}
             className={cn(
-              'whitespace-nowrap rounded-full px-3 py-1.5 text-[0.8rem] font-semibold animate-in fade-in-0 zoom-in-95 duration-300 motion-reduce:animate-none',
+              'shrink-0 whitespace-nowrap rounded-full px-2.5 py-1.5 text-[0.8rem] font-semibold xl:px-3 animate-in fade-in-0 zoom-in-95 duration-300 motion-reduce:animate-none',
               chipTones[chip.tone],
             )}
           >
@@ -111,46 +116,73 @@ function StationTileBase({ station, waiting, inService = 0, was, chip, workers, 
         <HairlineFigure mount={figure.mount} state={figureState} label={figure.label} className="relative z-[1] mx-auto w-full max-w-[280px] wide:max-w-[min(280px,22svh)]" />
       </div>
 
-      <div className={cn('flex flex-col gap-2.5 px-6 pb-5 pt-4', waiting === null && 'invisible')}>
-        <div className="flex items-center justify-between gap-3">
-          <span className="text-sm font-semibold text-ink-2">{words.waiting}</span>
-          {workers !== undefined ? (
-            <span key={workers} className={cn('inline-flex items-center gap-1.5 text-sm font-semibold tabular', workers > 1 ? 'text-[#2a4a40]' : 'text-ink-2', FADE)}>
-              <UserRound aria-hidden="true" className="size-4" strokeWidth={2} />
-              {workers} {workers === 1 ? 'worker' : 'workers'}
+      {about ? (
+        <div className="flex flex-col gap-2.5 px-5 pb-5 pt-4 xl:px-6">
+          {/* Row heights match the counts footer exactly, so the tile keeps its size between chapters. */}
+          <div className="flex min-h-7 items-center justify-between gap-2 whitespace-nowrap">
+            <span className={cn('rounded-full px-2.5 py-1 text-[0.8rem] font-semibold tabular', highlight ? 'bg-forest text-paper' : 'bg-ink/[0.07] text-ink')}>
+              about {station.serviceSeconds} s each
             </span>
-          ) : null}
-        </div>
-        <div className="flex min-h-[2.6rem] items-end justify-between gap-3">
-          <span className="flex items-baseline gap-2.5">
-            <span key={queue} className={cn('display inline-block text-[2.75rem] leading-[0.85] tabular', longer ? 'text-queue' : 'text-ink', FADE)}>
-              {queue}
-            </span>
-            {was !== undefined ? (
-              <span className="text-base font-semibold text-ink-2 tabular">
-                was <span className="line-through decoration-2">{was}</span>
+            {workers !== undefined ? (
+              <span className="inline-flex shrink-0 items-center gap-1.5 text-[0.8rem] font-semibold text-ink-2 tabular xl:text-sm">
+                <UserRound aria-hidden="true" className="size-4" strokeWidth={2} />
+                {workers} {workers === 1 ? 'worker' : 'workers'}
               </span>
             ) : null}
-          </span>
-          <span aria-hidden="true" className="flex max-w-[8.5rem] flex-wrap justify-end gap-1.5 pb-1">
-            {Array.from({ length: shown }, (_, i) => (
-              <span key={i} className="size-3 rounded-full border-2 border-queue bg-queue-tint animate-in fade-in-0 zoom-in-75 duration-500 ease-out motion-reduce:animate-none" />
+          </div>
+          {/* The repeating pattern of customers, so "about 24 s" is not mistaken for every order. */}
+          <dl className="grid min-h-[2.6rem] grid-cols-3 items-end gap-2">
+            {station.pattern.map((s, i) => (
+              <div key={i} className="flex flex-col">
+                <dd className="font-display text-xl font-semibold leading-tight tabular">{s} s</dd>
+                <dt className="truncate text-xs font-medium text-ink-2">{station.kinds[i]}</dt>
+              </div>
             ))}
-            {queue > MAX_DOTS ? <span className="text-xs font-semibold text-queue">+{queue - MAX_DOTS}</span> : null}
-          </span>
+          </dl>
+          <p className="truncate border-t border-line pt-2.5 text-sm text-ink-2">{station.does}</p>
         </div>
-        <p className="flex items-center gap-2 border-t border-line pt-2.5 text-sm text-ink-2 tabular">
-          <span aria-hidden="true" className={cn('size-3 shrink-0 rounded-full transition-colors duration-500', inService > 0 ? 'bg-forest' : 'border-2 border-line')} />
-          <span key={inService} className={FADE}>
-            {inService > 0 ? `${inService} ${words.serving}` : words.idle}
-          </span>
-        </p>
-      </div>
+      ) : (
+        <div className={cn('flex flex-col gap-2.5 px-5 pb-5 pt-4 xl:px-6', waiting === null && 'invisible')}>
+          <div className="flex min-h-7 items-center justify-between gap-2 whitespace-nowrap">
+            <span className="min-w-0 truncate text-[0.8rem] font-semibold text-ink-2 xl:text-sm">{words.waiting}</span>
+            {workers !== undefined ? (
+              <span key={workers} className={cn('inline-flex shrink-0 items-center gap-1.5 text-[0.8rem] font-semibold tabular xl:text-sm', workers > 1 ? 'text-[#2a4a40]' : 'text-ink-2', FADE)}>
+                <UserRound aria-hidden="true" className="size-4" strokeWidth={2} />
+                {workers} {workers === 1 ? 'worker' : 'workers'}
+              </span>
+            ) : null}
+          </div>
+          <div className="flex min-h-[2.6rem] items-end justify-between gap-3">
+            <span className="flex items-baseline gap-2.5">
+              <span key={queue} className={cn('display inline-block text-[2.75rem] leading-[0.85] tabular', longer ? 'text-queue' : 'text-ink', FADE)}>
+                {queue}
+              </span>
+              {was !== undefined ? (
+                <span className="text-base font-semibold text-ink-2 tabular">
+                  was <span className="line-through decoration-2">{was}</span>
+                </span>
+              ) : null}
+            </span>
+            <span aria-hidden="true" className="flex max-w-[8.5rem] flex-wrap justify-end gap-1.5 pb-1">
+              {Array.from({ length: shown }, (_, i) => (
+                <span key={i} className="size-3 rounded-full border-2 border-queue bg-queue-tint animate-in fade-in-0 zoom-in-75 duration-500 ease-out motion-reduce:animate-none" />
+              ))}
+              {queue > MAX_DOTS ? <span className="text-xs font-semibold text-queue">+{queue - MAX_DOTS}</span> : null}
+            </span>
+          </div>
+          <p className="flex items-center gap-2 whitespace-nowrap border-t border-line pt-2.5 text-sm text-ink-2 tabular">
+            <span aria-hidden="true" className={cn('size-3 shrink-0 rounded-full transition-colors duration-500', inService > 0 ? 'bg-forest' : 'border-2 border-line')} />
+            <span key={inService} className={FADE}>
+              {inService > 0 ? `${inService} ${words.serving}` : words.idle}
+            </span>
+          </p>
+        </div>
+      )}
     </>
   )
 
   const surface = cn(
-    'relative flex w-full flex-col overflow-hidden rounded-card text-left text-ink',
+    'relative flex h-full w-full flex-col overflow-hidden rounded-card text-left text-ink',
     'transition-[background-color,translate,scale,box-shadow] duration-500 ease-[var(--ease-out)] motion-reduce:transition-none',
     // A tile the beat is not about steps back: the card turns translucent and its picture fades,
     // but its words keep full contrast (fading the whole tile took text below 4.5:1).

@@ -44,6 +44,7 @@ export function Experiment() {
   const opener = useRef<HTMLElement | null>(null)
   const controls = useRef<HTMLDivElement>(null)
   const stage = useRef<HTMLDivElement>(null)
+  const resultsRef = useRef<HTMLDivElement>(null)
 
   const running = view.mode === 'running'
   const complete = view.mode === 'complete'
@@ -55,6 +56,23 @@ export function Experiment() {
     setResults({ ...results, [view.presetId]: FULL[view.presetId] })
     setShown(view.presetId)
   }
+
+  // When a run finishes, bring its result into view (as Play brings the stage into view), so
+  // nobody has to look for it. Only a newly finished run does this; switching results does not.
+  const finished = Object.keys(results).length
+  const lastFinished = useRef(finished)
+  useEffect(() => {
+    if (finished <= lastFinished.current) return
+    lastFinished.current = finished
+    const el = resultsRef.current
+    if (!el) return
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    const frame = requestAnimationFrame(() => {
+      const top = el.getBoundingClientRect().top + window.scrollY - 88
+      window.scrollTo({ top, behavior: reduce ? 'auto' : 'smooth' })
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [finished])
 
   // Scrolling back up into the story pauses the run and keeps it; Play resumes it.
   useEffect(() => {
@@ -185,9 +203,11 @@ export function Experiment() {
           </div>
 
           {/* 3. The results of every finished run, switchable in place. */}
-          {shown ? (
-            <ResultsPanel results={results} baseline={BASELINE} shown={shown} onShow={setShown} next={next} onTryNext={actions.select} />
-          ) : null}
+          <div ref={resultsRef} className="scroll-mt-24 empty:hidden">
+            {shown ? (
+              <ResultsPanel results={results} baseline={BASELINE} shown={shown} onShow={setShown} next={next} onTryNext={actions.select} />
+            ) : null}
+          </div>
 
           <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-sm" style={{ color: ROOM.fg2 }}>
             <span className="inline-flex items-center gap-2">
