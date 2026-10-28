@@ -4,10 +4,11 @@ import { cn } from '@/lib/utils'
 import { MODEL_LABEL, beats, plain } from './storyBeats'
 import { RichText } from './RichText'
 import { frameFor, traceShare } from './frames'
+import { setMagnet, stopMagnet } from './magnet'
 import { RevealText } from './RevealText'
 import { StoryStage } from './StoryStage'
 import { BEAT_THEMES, GLOW_BACKGROUND, RUSH_FROM, RUSH_TO } from './theme'
-import { BEAT_COUNT, RUSH_STEPS, TOTAL_WEIGHT, beatStart, locate, rushStepIndex, travelPosition } from './timeline'
+import { BEAT_COUNT, RUSH_STEPS, TOTAL_WEIGHT, beatRest, locate, restPoints, rushFreeRange, rushStepIndex, snapTarget, travelPosition } from './timeline'
 
 /**
  * The pinned, scroll-driven story (screens at least 900px wide, motion allowed).
@@ -59,8 +60,10 @@ export function StoryExperience() {
     const el = track.current
     if (!el) return
     const scrollable = el.offsetHeight - window.innerHeight
-    const top = el.getBoundingClientRect().top + window.scrollY + beatStart(beat) * scrollable + 2
-    window.scrollTo({ top, behavior: 'smooth' })
+    const top = el.getBoundingClientRect().top + window.scrollY + beatRest(beat) * scrollable
+    stopMagnet()
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    gsap.to(window, { scrollTo: { y: top, autoKill: true }, duration: reduce ? 0 : 1.1, ease: 'power2.inOut', overwrite: true })
   }, [])
 
   // Scroll position -> state, the traced order and parallax.
@@ -128,6 +131,32 @@ export function StoryExperience() {
           gsap.fromTo(q('[data-text="0"] [data-support]'), { autoAlpha: 0, y: 14 }, { autoAlpha: 1, y: 0, duration: 0.7, delay: 0.4, ease: 'power3.out', overwrite: 'auto' })
         },
       })
+      // The magnet. One trigger from the top of the page (the hero) to the end of the story. After
+      // the reader stops, the page eases to a resting point: the hero, each chapter, the three stops
+      // of the traced order, the start and end of the rush (free in between). Native scrolling is
+      // untouched while the reader is moving. See snapTarget in timeline.ts.
+      const trackTop = () => (track.current ? track.current.getBoundingClientRect().top + window.scrollY : 0)
+      const scrollable = () => (track.current ? track.current.offsetHeight - window.innerHeight : 0)
+      const magnet = ScrollTrigger.create({
+        start: 0,
+        end: () => trackTop() + scrollable(),
+        snap: {
+          snapTo: (value, self) => {
+            const end = trackTop() + scrollable()
+            if (!self || end <= 0) return value
+            const px = (p: number) => trackTop() + p * scrollable()
+            const points = [0, ...restPoints().map(px), end]
+            const [a, b] = rushFreeRange()
+            return snapTarget(value * end, points, self.direction, [px(a), px(b)]) / end
+          },
+          // Long snaps (through the hero's zoom) take up to 2 s, so the camera move stays slow.
+          duration: { min: 0.35, max: 2 },
+          delay: 0.14,
+          ease: 'power2.inOut',
+          inertia: false,
+        },
+      })
+      setMagnet(magnet)
       const relayout = () => positionStage(root.current)
       const observer = new ResizeObserver(relayout)
       q('[data-text]').forEach((g) => observer.observe(g))
@@ -144,6 +173,8 @@ export function StoryExperience() {
         st.kill()
         stageTrigger.kill()
         arrive.kill()
+        magnet.kill()
+        setMagnet(null)
       }
     },
     { scope: root },
@@ -218,7 +249,7 @@ export function StoryExperience() {
         <p>{MODEL_LABEL}. Not a forecast for a real café.</p>
       </div>
 
-      <div ref={track} className="relative" style={{ height: `${TOTAL_WEIGHT * 100}svh` }}>
+      <div ref={track} data-story-track className="relative" style={{ height: `${TOTAL_WEIGHT * 100}svh` }}>
         <div aria-hidden="true" className="sticky top-0 isolate h-svh overflow-hidden">
           <div data-bg className="absolute inset-0" style={{ backgroundColor: theme0.bg }} />
           <div

@@ -4,6 +4,8 @@ import { gsap, useGSAP } from '@/lib/gsap'
 import { cn } from '@/lib/utils'
 import { RevealText } from './RevealText'
 import { BEAT_THEMES } from './theme'
+import { stopMagnet } from './magnet'
+import { beatRest } from './timeline'
 import { useStoryMode } from './useStoryMode'
 
 const FIRST_ROOM = BEAT_THEMES[0].bg
@@ -103,13 +105,17 @@ export function Hero() {
 
   const begin = () => {
     const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    const target = pinned && root.current ? root.current.offsetTop + root.current.offsetHeight - window.innerHeight + 2 : '#story'
+    // Land on the first chapter's resting point, so the scroll magnet has nothing left to do.
+    const track = document.querySelector<HTMLElement>('[data-story-track]')
+    const target =
+      pinned && track ? track.getBoundingClientRect().top + window.scrollY + beatRest(0) * (track.offsetHeight - window.innerHeight) : '#story'
     if (reduce) {
       if (typeof target === 'number') window.scrollTo(0, target)
       else document.querySelector(target)?.scrollIntoView()
       return
     }
-    gsap.to(window, { scrollTo: { y: target, autoKill: true }, duration: pinned ? 2.8 : 1, ease: 'power2.inOut' })
+    stopMagnet()
+    gsap.to(window, { scrollTo: { y: target, autoKill: true }, duration: pinned ? 2.8 : 1, ease: 'power2.inOut', overwrite: true })
   }
 
   const initialInset = typeof window === 'undefined' ? FULL : insetFor(window.innerWidth, window.innerHeight)

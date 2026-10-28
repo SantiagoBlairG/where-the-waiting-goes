@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 
 /** Scroll length of each beat in viewport heights. Keep in sync with src/story/timeline.ts. */
-const WEIGHTS = [1.7, 2.2, 3.2, 1.4, 1.4, 1.4, 1.3, 1]
+const WEIGHTS = [1.7, 2.2, 4.5, 1.4, 1.4, 1.4, 1.3, 1]
 const TOTAL = WEIGHTS.reduce((a, b) => a + b, 0)
 const HEADLINES = [
   'If ordering gets faster, why doesn’t your coffee?',
@@ -126,6 +126,29 @@ test.describe('welcome and pinned story on a wide screen', () => {
     await settle(page, 2)
     expect(await clock()).toBe(forwardClock)
     expect(errors, errors.join('\n')).toEqual([])
+  })
+
+  test('a short wheel scroll settles on the next resting point (the magnet), and the rush scrolls freely', async ({ page }) => {
+    await page.goto('/')
+    await goTo(page, 3, 0.5)
+    await settle(page, 3)
+    await page.mouse.move(700, 450)
+    for (let i = 0; i < 3; i++) await page.mouse.wheel(0, 100)
+    await settle(page, 4)
+    const rest = await page.evaluate(({ weights, total }) => {
+      const track = document.querySelector<HTMLElement>('[data-story-track]')!
+      const scrollable = track.offsetHeight - window.innerHeight
+      const before = weights.slice(0, 4).reduce((a, b) => a + b, 0)
+      return Math.round(track.getBoundingClientRect().top + window.scrollY + ((before + weights[4] * 0.5) / total) * scrollable)
+    }, { weights: WEIGHTS, total: TOTAL })
+    await expect.poll(() => page.evaluate(() => Math.round(window.scrollY)), { timeout: 4000 }).toBe(rest)
+
+    // Inside the rush the clock follows the scroll: no magnet pulls it to a rest point.
+    await goTo(page, 2, 0.5)
+    await settle(page, 2)
+    const y = await page.evaluate(() => Math.round(window.scrollY))
+    await page.waitForTimeout(1200)
+    expect(await page.evaluate(() => Math.round(window.scrollY))).toBe(y)
   })
 
   test('the chapter rail jumps between chapters and marks the current one', async ({ page }) => {
