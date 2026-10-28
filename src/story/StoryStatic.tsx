@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils'
 import { MODEL_LABEL, beats, type Beat, type BeatId } from './storyBeats'
 import { frameFor, type StageFrame } from './frames'
 import { RevealText } from './RevealText'
+import { RichText } from './RichText'
 import { StoryStage } from './StoryStage'
 import { baselineMidRush } from './storySnapshots'
 import { BEAT_THEMES, GLOW_BACKGROUND, RUSH_MID, type RoomTheme } from './theme'
@@ -39,8 +40,9 @@ export function StoryStatic() {
       <Room {...byId.fix}>{stage(3, frameFor(3))}</Room>
       <Room {...byId.surprise}>{stage(4, frameFor(4))}</Room>
       <Room {...byId.reveal}>{stage(5, frameFor(5))}</Room>
+      <Room {...byId.pickup}>{stage(6, frameFor(6))}</Room>
       <Room {...byId['your-turn']} last>
-        {stage(6, frameFor(6))}
+        {stage(7, frameFor(7))}
       </Room>
     </div>
   )
@@ -162,8 +164,8 @@ function Room({ beat, theme, first, last, id, children }: RoomProps) {
           )}
         />
         {beat.support ? (
-          <p data-support className="max-w-[38ch] text-pretty text-lg leading-relaxed sm:text-xl" style={{ color: theme.fg2 }}>
-            {beat.support}
+          <p data-support className="max-w-[44ch] text-pretty text-lg leading-relaxed sm:text-xl" style={{ color: theme.fg2 }}>
+            <RichText text={beat.support} />
           </p>
         ) : null}
         <figure className="m-0 mt-8 flex w-full flex-col">

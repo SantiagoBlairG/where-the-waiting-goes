@@ -1,7 +1,8 @@
 import { memo, useCallback, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { gsap, ScrollTrigger, useGSAP } from '@/lib/gsap'
 import { cn } from '@/lib/utils'
-import { MODEL_LABEL, beats } from './storyBeats'
+import { MODEL_LABEL, beats, plain } from './storyBeats'
+import { RichText } from './RichText'
 import { frameFor, traceShare } from './frames'
 import { RevealText } from './RevealText'
 import { StoryStage } from './StoryStage'
@@ -27,18 +28,23 @@ import { BEAT_COUNT, RUSH_STEPS, TOTAL_WEIGHT, beatStart, locate, rushStepIndex,
  */
 
 const GUTTER = 'clamp(32px, 7vw, 120px)'
-const BEAT_LABELS = ['A familiar moment', 'One order, three stops', 'The rush', 'The obvious fix', 'The surprise', 'The reveal', 'Your turn']
+const BEAT_LABELS = ['A familiar moment', 'One order, three stops', 'The rush', 'The obvious fix', 'The surprise', 'The reveal', 'And pickup?', 'Your turn']
 
 type Step = { beat: number; rush: number; stop: number }
 const START: Step = { beat: 0, rush: 0, stop: 0 }
 
-/** Keeps the stage clear of the headline: it starts below whichever text group is showing. */
-function positionStage(root: HTMLElement | null, beat: number) {
+/**
+ * Keeps the stage clear of every headline. It sits below the tallest text group, not the one
+ * showing, so its top (and therefore the tiles' size) is the same on every beat: the tiles never
+ * grow and shrink as the story moves on.
+ */
+function positionStage(root: HTMLElement | null) {
   const area = root?.querySelector<HTMLElement>('[data-stage-area]')
-  const group = root?.querySelector<HTMLElement>('[data-text="' + beat + '"]')
-  if (!area || !group) return
-  const gap = Math.max(32, Math.round(window.innerHeight * 0.04))
-  gsap.set(area, { top: group.offsetTop + group.offsetHeight + gap })
+  const groups = root ? [...root.querySelectorAll<HTMLElement>('[data-text]')] : []
+  if (!area || !groups.length) return
+  const bottom = Math.max(...groups.map((g) => g.offsetTop + g.offsetHeight))
+  const gap = Math.max(28, Math.round(window.innerHeight * 0.035))
+  gsap.set(area, { top: bottom + gap })
 }
 
 export function StoryExperience() {
@@ -105,8 +111,8 @@ export function StoryExperience() {
       // The first chapter is pinned under the hero. Its headline rises when the hero has dissolved.
       const arrive = ScrollTrigger.create({
         trigger: track.current,
-        // The story is pulled 160svh up under the hero (220svh tall), so it is pinned just before the
-        // hero starts to dissolve (at about 0.52 of the hero's timeline).
+        // The story is pulled 228svh up under the hero (320svh tall), so it is pinned just before the
+        // hero starts to dissolve (at 0.42 of the hero timeline).
         start: 'top top',
         onLeaveBack: () => {
           if (live.current.step.beat !== 0) return
@@ -121,7 +127,7 @@ export function StoryExperience() {
           gsap.fromTo(q('[data-text="0"] [data-support]'), { autoAlpha: 0, y: 14 }, { autoAlpha: 1, y: 0, duration: 0.7, delay: 0.4, ease: 'power3.out', overwrite: 'auto' })
         },
       })
-      const relayout = () => positionStage(root.current, live.current.step.beat)
+      const relayout = () => positionStage(root.current)
       const observer = new ResizeObserver(relayout)
       q('[data-text]').forEach((g) => observer.observe(g))
       window.addEventListener('resize', relayout)
@@ -172,7 +178,7 @@ export function StoryExperience() {
         gsap.set(group(prev), { autoAlpha: 0, delay: 0.36 })
       }
       gsap.set(group(beat), { autoAlpha: 1 })
-      positionStage(root.current, beat)
+      positionStage(root.current)
       // The very first chapter waits under the hero; its own trigger reveals it.
       if (prev < 0 && beat === 0) {
         gsap.set(group(0), { autoAlpha: 0 })
@@ -191,13 +197,13 @@ export function StoryExperience() {
   const theme0 = BEAT_THEMES[0]
 
   return (
-    <div ref={root} id="story" className="relative -mt-[160svh]">
+    <div ref={root} id="story" className="relative -mt-[228svh]">
       {/* The story as plain, ordered text for assistive technology. The pinned stage is decorative. */}
       <div className="sr-only">
         {beats.map((b) => (
           <section key={b.id}>
             <h2>{b.headline}</h2>
-            {b.support ? <p>{b.support}</p> : null}
+            {b.support ? <p>{plain(b.support)}</p> : null}
             <p>{b.stageDescription}</p>
           </section>
         ))}
@@ -290,17 +296,19 @@ const TextGroups = memo(function TextGroups() {
           key={b.id}
           data-text={i}
           style={{ opacity: i === 0 ? 1 : 0, visibility: i === 0 ? 'visible' : 'hidden', left: GUTTER, right: GUTTER }}
-          className="absolute top-[clamp(84px,12svh,128px)] flex flex-col items-start gap-[clamp(10px,2svh,20px)]"
+          // Headline on the left, its description beside it, aligned to the last line: the text block
+          // stays short, which leaves the stage more room.
+          className="absolute top-[clamp(84px,12svh,128px)] grid grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)] items-end gap-x-[clamp(32px,5vw,96px)]"
         >
           <RevealText
             as="p"
             text={b.headline}
             accent={b.accent}
-            className="display max-w-[20ch] text-balance text-[clamp(2rem,min(4.6vw,8svh),5rem)] leading-[0.98]"
+            className="display max-w-[16ch] text-balance text-[clamp(2rem,min(4.4vw,7.6svh),4.8rem)] leading-[0.98]"
           />
           {b.support ? (
-            <p data-support className="max-w-[46ch] text-pretty text-[clamp(1rem,2.3svh,1.2rem)] leading-relaxed" style={{ color: BEAT_THEMES[0].fg2 }}>
-              {b.support}
+            <p data-support className="max-w-[46ch] pb-[0.35em] text-pretty text-[clamp(0.98rem,2.1svh,1.15rem)] leading-relaxed" style={{ color: BEAT_THEMES[0].fg2 }}>
+              <RichText text={b.support} />
             </p>
           ) : null}
         </div>

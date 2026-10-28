@@ -43,7 +43,7 @@ export function explainPreset(preset: Preset, result: FullRunResult, baseline: F
     `${slow.name} is the slowest step at ${fmt(slow.perMinute)} orders a minute, while ${fmt(DEMAND_PER_MINUTE)} arrive.`,
   ]
   if (preset.id === 'original') {
-    lines.push('One person at each step, so the register and the drinks both fall behind.')
+    lines.push('One worker at each stop, so the register and the drinks both fall behind.')
   } else {
     const changes = STATIONS.map((s, i) => ({ s, before: Math.round(baseline.queueWaitSeconds[i]), after: Math.round(result.queueWaitSeconds[i]) })).filter(
       (c) => c.before !== c.after,
@@ -51,7 +51,9 @@ export function explainPreset(preset: Preset, result: FullRunResult, baseline: F
     lines.push(
       changes.length
         ? changes.map((c) => `Waiting at ${spoken(c.s.id, c.s.name)} went from ${c.before} s to ${c.after} s.`).join(' ')
-        : 'No station’s waiting time changed.',
+        : placement === 'pickup'
+          ? 'Pickup already had spare capacity, so the extra worker mostly stands idle. No line got any shorter.'
+          : 'No station’s waiting time changed.',
     )
   }
   const diff = result.completedAtClose - baseline.completedAtClose

@@ -1,13 +1,13 @@
 import { ARRIVAL_INTERVAL_SECONDS, STATIONS, capacityPerMinute, type StationId } from '@/simulation/config'
 import type { Snapshot } from '@/simulation/types'
 import type { TileChip } from '@/components/StationTile'
-import { SAME_RUSH_LABEL } from './storyBeats'
+import { SAME_RUSH_LABEL, beats } from './storyBeats'
 import { baselineAtClose, cashierAtClose, startOfRush } from './storySnapshots'
 
 /**
  * What the one stage shows on each beat. Pure data from the model, shared by the pinned story
- * and the plain layout. The rule for this pass: every beat changes one thing on the same three
- * tiles, and the line under the stage says that one thing in words.
+ * and the plain layout. Every beat changes one thing on the same three tiles, and the track
+ * under the stage says that one thing in words.
  */
 export type TileFrame = {
   id: StationId
@@ -15,6 +15,7 @@ export type TileFrame = {
   visible: boolean
   waiting: number | null
   inService: number
+  workers?: number
   was?: number
   chip?: TileChip
   dim: boolean
@@ -22,9 +23,9 @@ export type TileFrame = {
 }
 
 export type TrackFrame =
-  /** Beat 2: one order travels the three stops. Position is set from the scroll, not from here. */
+  /** One order travels the three stops. Position is set from the scroll, not from here. */
   | { kind: 'trace'; caption: string }
-  /** Beat 3: the ten-minute rush clock. */
+  /** The ten-minute rush clock. */
   | { kind: 'clock'; seconds: number; caption: string }
   /** A plain caption under the stage. */
   | { kind: 'caption'; caption: string }
@@ -32,9 +33,10 @@ export type TrackFrame =
 export type StageFrame = { tiles: TileFrame[]; track: TrackFrame | null }
 
 const IDS: readonly StationId[] = ['order', 'drinks', 'pickup']
-const drinks = STATIONS[1]
+const [order, drinks, pickup] = STATIONS
 const fmt = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1))
 const mmss = (s: number) => `${Math.floor(s / 60)}:${String(Math.round(s % 60)).padStart(2, '0')}`
+const ARRIVALS_PER_MINUTE = 60 / ARRIVAL_INTERVAL_SECONDS
 
 const tile = (id: StationId, over: Partial<TileFrame> = {}): TileFrame => ({
   id,
@@ -46,76 +48,85 @@ const tile = (id: StationId, over: Partial<TileFrame> = {}): TileFrame => ({
   ...over,
 })
 
+/** Everything a tile shows for one station at one moment: waiting, being served, workers. */
 const countsFrom = (snap: Snapshot, id: StationId) => {
   const s = snap.stations[IDS.indexOf(id)]
-  return { waiting: s.queue, inService: s.inService }
+  return { waiting: s.queue, inService: s.inService, workers: s.workers }
 }
 
-/** Beat 2: the caption for the stop the traced order is at. */
+/** The traced order: where it is and how long that stop takes. */
 export function stopCaption(stop: number): string {
   const s = STATIONS[Math.max(0, Math.min(2, stop))]
   return `Your order is at ${s.name.toLowerCase()}. It takes ${s.serviceSeconds} seconds here.`
 }
 
-/** Beat 3: three phases of the rush, one sentence each. */
+/** The rush, in three phases, one sentence each. */
 export function rushCaption(snap: Snapshot): string {
-  const order = STATIONS[0]
-  if (snap.timeSeconds < 100) return `A new order every ${ARRIVAL_INTERVAL_SECONDS} seconds, but each one takes ${order.serviceSeconds} at the register.`
-  if (snap.timeSeconds < 600) return 'Orders arrive faster than they can be made. Lines grow at the register and the drinks.'
-  return `10:00. ${snap.completed} coffees handed over, ${snap.inShop} people still waiting.`
+  if (snap.timeSeconds < 100)
+    return `Each ring is one customer's order waiting. A new customer comes every ${ARRIVAL_INTERVAL_SECONDS} seconds; the register needs ${order.serviceSeconds}.`
+  if (snap.timeSeconds < 600) return 'Customers arrive faster than orders can be taken and drinks made, so both lines grow.'
+  return `10:00. ${snap.completed} coffees handed over, ${snap.inShop} customers still waiting.`
 }
 
 export function frameFor(beat: number, opts: { stop?: number; rush?: Snapshot } = {}): StageFrame {
   const stop = opts.stop ?? 0
-  switch (beat) {
-    case 0:
+  const at = (snap: Snapshot, id: StationId, over: Partial<TileFrame> = {}) => tile(id, { ...countsFrom(snap, id), ...over })
+  switch (beats[beat]?.id) {
+    case 'familiar':
       return {
         tiles: IDS.map((id, i) => tile(id, { visible: i === 0, highlight: i === 0, chip: i === 0 ? { text: 'Your order', tone: 'active' } : undefined })),
         track: null,
       }
-    case 1:
+    case 'three-stops':
       return {
         tiles: IDS.map((id, i) => tile(id, { highlight: i === stop, dim: i !== stop })),
         track: { kind: 'trace', caption: stopCaption(stop) },
       }
-    case 2: {
+    case 'rush': {
       const snap = opts.rush ?? startOfRush
       return {
-        tiles: IDS.map((id) => tile(id, countsFrom(snap, id))),
+        tiles: IDS.map((id) => at(snap, id)),
         track: { kind: 'clock', seconds: snap.timeSeconds, caption: rushCaption(snap) },
       }
     }
-    case 3:
+    case 'fix':
       return {
         tiles: IDS.map((id) =>
           id === 'order'
-            ? tile(id, { ...countsFrom(cashierAtClose, id), was: countsFrom(baselineAtClose, id).waiting, chip: { text: '+1 cashier', tone: 'active' }, highlight: true })
-            : tile(id, { dim: true }),
+            ? at(cashierAtClose, id, { was: countsFrom(baselineAtClose, id).waiting, chip: { text: '+1 cashier', tone: 'active' }, highlight: true })
+            : at(cashierAtClose, id, { dim: true }),
         ),
-        track: { kind: 'caption', caption: SAME_RUSH_LABEL },
+        track: { kind: 'caption', caption: `${SAME_RUSH_LABEL} Shown at 10:00.` },
       }
-    case 4:
+    case 'surprise':
       return {
         tiles: IDS.map((id) =>
           id === 'drinks'
-            ? tile(id, { ...countsFrom(cashierAtClose, id), was: countsFrom(baselineAtClose, id).waiting, highlight: true, chip: { text: 'Longer line', tone: 'queue' } })
-            : id === 'order'
-              ? tile(id, { ...countsFrom(cashierAtClose, id), chip: { text: '+1 cashier', tone: 'neutral' }, dim: true })
-              : tile(id, { dim: true }),
+            ? at(cashierAtClose, id, { was: countsFrom(baselineAtClose, id).waiting, highlight: true, chip: { text: 'Longer line', tone: 'queue' } })
+            : at(cashierAtClose, id, { dim: true, chip: id === 'order' ? { text: '+1 cashier', tone: 'neutral' } : undefined }),
         ),
-        track: { kind: 'caption', caption: SAME_RUSH_LABEL },
+        track: { kind: 'caption', caption: `${SAME_RUSH_LABEL} Shown at 10:00.` },
       }
-    case 5:
+    case 'reveal':
       return {
         tiles: IDS.map((id) =>
           id === 'drinks'
-            ? tile(id, { ...countsFrom(cashierAtClose, id), highlight: true, chip: { text: `${fmt(capacityPerMinute(drinks, 1))} drinks a minute`, tone: 'queue' } })
-            : tile(id, { dim: true }),
+            ? at(cashierAtClose, id, { highlight: true, chip: { text: `${fmt(capacityPerMinute(drinks, 1))} drinks a minute`, tone: 'queue' } })
+            : at(cashierAtClose, id, { dim: true }),
         ),
-        track: null,
+        track: { kind: 'caption', caption: `${fmt(ARRIVALS_PER_MINUTE)} customers arrive a minute. The drinks can only finish ${fmt(capacityPerMinute(drinks, 1))}.` },
+      }
+    case 'pickup':
+      return {
+        tiles: IDS.map((id) =>
+          id === 'pickup'
+            ? at(baselineAtClose, id, { highlight: true, chip: { text: `${fmt(capacityPerMinute(pickup, 1))} a minute, spare`, tone: 'active' } })
+            : at(baselineAtClose, id, { dim: true }),
+        ),
+        track: { kind: 'caption', caption: `One worker hands over ${fmt(capacityPerMinute(pickup, 1))} drinks a minute, more than ever reach pickup.` },
       }
     default:
-      return { tiles: IDS.map((id) => tile(id, countsFrom(startOfRush, id))), track: null }
+      return { tiles: IDS.map((id) => at(startOfRush, id)), track: null }
   }
 }
 

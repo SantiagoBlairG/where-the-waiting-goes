@@ -22,8 +22,9 @@ test.describe('the experiment', () => {
     await expect(section.getByRole('radio', { name: /Original team/ })).toBeChecked()
     await expect(section.locator('output')).toHaveText('0:00')
     await expect(section.getByRole('button', { name: 'Play' })).toBeVisible()
-    for (const name of ['Original team', 'Extra cashier', 'Extra barista']) await expect(tab(page, name)).toContainText('Not run yet')
-    await expect(station(page, 'Make drinks')).toContainText('1 person')
+    for (const name of ['Original team', 'Extra cashier', 'Extra barista', 'Extra at pickup']) await expect(tab(page, name)).toContainText('Not run yet')
+    await expect(station(page, 'Make drinks')).toContainText('1 worker')
+    await expect(station(page, 'Pick up')).toContainText('Drinks to hand over')
   })
 
   test('choosing a setup resets the run and moves the extra person', async ({ page }) => {
@@ -33,8 +34,8 @@ test.describe('the experiment', () => {
     await section.getByRole('radio', { name: /Extra barista/ }).check({ force: true })
     await expect(section.locator('output')).toHaveText('0:00')
     await expect(section.getByRole('button', { name: 'Play' })).toBeVisible()
-    await expect(station(page, 'Make drinks')).toContainText('2 people')
-    await expect(station(page, 'Make drinks')).toContainText('+1 here')
+    await expect(station(page, 'Make drinks')).toContainText('2 workers')
+    await expect(station(page, 'Make drinks')).toContainText('+1 worker')
   })
 
   test('play advances the clock, pause stops it, restart returns to 0:00', async ({ page }) => {
@@ -81,14 +82,14 @@ test.describe('the experiment', () => {
     await expect.poll(async () => seconds(await section.locator('output').innerText())).toBeGreaterThan(seconds(during))
   })
 
-  test('each finished run writes the model result on its own tab, so the three compare side by side', async ({ page }) => {
-    test.setTimeout(120_000)
+  test('each finished run writes the model result on its own tab, so the four compare side by side', async ({ page }) => {
+    test.setTimeout(300_000)
     await page.clock.install()
     const section = await open(page)
     const runToEnd = async () => {
       await section.getByRole('button', { name: 'Play' }).click()
       // 30x speed: the slowest setup finishes at 15:39 of simulated time, about 31 s of fake real time.
-      for (let i = 0; i < 8 && (await section.getByRole('button', { name: 'Finished' }).count()) === 0; i++) await page.clock.runFor(5_000)
+      for (let i = 0; i < 6 && (await section.getByRole('button', { name: 'Finished' }).count()) === 0; i++) await page.clock.runFor(8_000)
       await expect(section.getByRole('button', { name: 'Finished' })).toBeDisabled()
     }
 
@@ -108,7 +109,11 @@ test.describe('the experiment', () => {
     await runToEnd()
     await expect(section).toContainText('23 orders are picked up by 10:00, 5 more than the original team.')
     await expect(tab(page, 'Extra barista')).toContainText('23 coffees by 10:00 · avg 2:07')
-    await expect(section).toContainText('You have tried all three.')
+    await section.getByRole('button', { name: 'Try extra at pickup next' }).click()
+    await runToEnd()
+    await expect(section).toContainText('Pickup already had spare capacity, so the extra worker mostly stands idle.')
+    await expect(tab(page, 'Extra at pickup')).toContainText('18 coffees by 10:00 · avg 3:34')
+    await expect(section).toContainText('You have tried them all.')
     // The earlier results stay on their tabs.
     await expect(tab(page, 'Original team')).toContainText('18 coffees by 10:00')
   })

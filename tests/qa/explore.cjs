@@ -59,6 +59,12 @@ function pageChecks() {
         const cy = Math.max(a.r.top, b.r.top) + h / 2
         const top = document.elementFromPoint(cx, cy)
         if (top && !a.el.contains(top) && !b.el.contains(top)) continue
+        // Text buried under an opaque layer (the story waiting beneath the hero) cannot collide.
+        const buried = (x) => {
+          const t = document.elementFromPoint(x.r.left + x.r.width / 2, x.r.top + x.r.height / 2)
+          return t && !x.el.contains(t) && !t.contains(x.el)
+        }
+        if (buried(a) || buried(b)) continue
       }
       if (w > 3 && h > 3) overlaps.push(`"${a.text}" x "${b.text}" (${Math.round(w)}x${Math.round(h)}px)`)
     }

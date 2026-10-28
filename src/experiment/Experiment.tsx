@@ -14,9 +14,10 @@ const ROOM = { bg: '#c8ded3', fg: '#1b2622', fg2: '#3c4d46', glowA: 'rgba(226,22
 
 /** What each setup changes, in a few words. */
 const CHANGE: Record<PresetId, string> = {
-  original: 'One person at each step',
-  cashier: '+1 person at the register',
-  barista: '+1 person making drinks',
+  original: 'One worker at each stop',
+  cashier: '+1 worker at the register',
+  barista: '+1 worker making drinks',
+  runner: '+1 worker at pickup',
 }
 
 /** Full-run results for each setup, from the model, computed once. */
@@ -116,7 +117,7 @@ export function Experiment() {
             Run the rush <span className="accent-serif">yourself</span>
           </h2>
           <p className="max-w-[48ch] text-pretty text-lg leading-relaxed" style={{ color: ROOM.fg2 }}>
-            Pick where the extra person works and press Play. Each result stays on its tab, so you can compare.
+            Choose where the extra worker goes and press Play. The same 30 customers arrive every time. Each result stays on its tab, so you can compare.
           </p>
         </header>
 
@@ -125,7 +126,7 @@ export function Experiment() {
           {/* 1. The decision. Choosing a setup restarts the rush from the beginning, paused. */}
           <fieldset>
             <legend className="sr-only">Choose a setup</legend>
-            <div className="grid gap-3 sm:grid-cols-3">
+            <div className="grid gap-3 sm:grid-cols-2 wide:grid-cols-4">
               {PRESETS.map((p) => {
                 const selected = view.presetId === p.id
                 const done = results[p.id]
@@ -174,8 +175,8 @@ export function Experiment() {
                   station={station}
                   waiting={s.queue}
                   inService={s.inService}
-                  people={s.workers}
-                  chip={s.workers > 1 ? { text: `+1 here`, tone: 'active' } : undefined}
+                  workers={s.workers}
+                  chip={s.workers > 1 ? { text: '+1 worker', tone: 'active' } : undefined}
                   onOpen={() => open({ kind: 'station', id: station.id })}
                 />
               )
@@ -203,7 +204,7 @@ export function Experiment() {
                   Try {next.name.toLowerCase()} next
                 </button>
               ) : (
-                <p className="text-base font-semibold">You have tried all three. Compare them on the tabs above.</p>
+                <p className="text-base font-semibold">You have tried them all. Compare them on the tabs above.</p>
               )}
             </div>
           ) : null}

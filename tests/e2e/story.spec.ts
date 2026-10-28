@@ -1,7 +1,7 @@
 import { expect, test, type Page } from '@playwright/test'
 
 /** Scroll length of each beat in viewport heights. Keep in sync with src/story/timeline.ts. */
-const WEIGHTS = [1, 2.2, 3.2, 1.4, 1.4, 1.4, 1]
+const WEIGHTS = [1.7, 2.2, 3.2, 1.4, 1.4, 1.4, 1.3, 1]
 const TOTAL = WEIGHTS.reduce((a, b) => a + b, 0)
 const HEADLINES = [
   'If ordering gets faster, why doesn’t your coffee?',
@@ -10,6 +10,7 @@ const HEADLINES = [
   'Put another person on the register.',
   'Ordering is faster. Your coffee isn’t.',
   'We didn’t remove the wait. We moved it.',
+  'And pickup? It was never the problem.',
   'Where would you put the extra person?',
 ]
 const capture = process.env.CAPTURE === '1'
@@ -45,10 +46,10 @@ test.describe('welcome and pinned story on a wide screen', () => {
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Where the waiting goes')
     if (capture) await page.screenshot({ path: 'docs/screenshots/0-hero.png' })
     const clip = () => page.locator('[data-hero-card]').evaluate((el) => getComputedStyle(el).clipPath)
-    expect(await clip()).toContain('14px')
+    expect(await clip()).toContain('round 48px')
     await page.evaluate(() => window.scrollTo(0, window.innerHeight * 0.3))
-    await expect.poll(clip).not.toContain('14px') // the card grows toward the edges
-    await goTo(page, 0, 0.3)
+    await expect.poll(clip).not.toContain('round 48px') // the card grows toward the edges
+    await goTo(page, 0, 0.8)
     await expect(page.locator('[data-hero-frame]')).toBeHidden()
     await settle(page, 0)
   })
@@ -84,9 +85,9 @@ test.describe('welcome and pinned story on a wide screen', () => {
     await settle(page, 2)
     const forwardClock = await clock()
     expect(forwardClock).toBe('5:40')
-    await expect(stage(page)).toContainText('Lines grow at the register and the drinks.')
+    await expect(stage(page)).toContainText('so both lines grow.')
     await goTo(page, 2, 0.99)
-    await expect(stage(page)).toContainText('10:00. 18 coffees handed over, 12 people still waiting.')
+    await expect(stage(page)).toContainText('10:00. 18 coffees handed over, 12 customers still waiting.')
     await shot('3-rush')
 
     await goTo(page, 3, 0.6)
@@ -109,8 +110,14 @@ test.describe('welcome and pinned story on a wide screen', () => {
 
     await goTo(page, 6, 0.6)
     await settle(page, 6)
+    await expect(tile(page, 'Pick up')).toContainText('4 a minute, spare')
+    await expect(tile(page, 'Pick up')).toContainText('1 being handed over')
+    await shot('7-pickup')
+
+    await goTo(page, 7, 0.6)
+    await settle(page, 7)
     await expect(stage(page).locator('[data-clock]')).toHaveCount(0)
-    await shot('7-your-turn')
+    await shot('8-your-turn')
 
     // Reverse scroll returns to exactly the same rush state.
     await goTo(page, 2, 0.55)
@@ -164,7 +171,7 @@ test.describe('static story (phones, tablets, reduced motion)', () => {
     await page.setViewportSize({ width: 1440, height: 900 })
     await page.goto('/')
     await expect(page.locator('[data-stage-area]')).toHaveCount(0)
-    await expect(page.getByRole('heading', { name: HEADLINES[6] })).toBeAttached()
+    await expect(page.getByRole('heading', { name: HEADLINES[7] })).toBeAttached()
     await page.getByRole('button', { name: 'See the story' }).click()
     await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(500)
   })

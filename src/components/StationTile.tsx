@@ -1,4 +1,5 @@
 import { memo, useMemo } from 'react'
+import { UserRound } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { StationConfig, StationId } from '@/simulation/config'
 import { HairlineFigure } from '@/illustrations/hairline/HairlineFigure'
@@ -10,16 +11,16 @@ export type TileChip = { text: string; tone: 'active' | 'queue' | 'neutral' }
 
 export type StationTileProps = {
   station: StationConfig
-  /** Orders waiting here. Null hides the number but keeps its space, so the tile never resizes. */
+  /** Orders waiting here. Null hides the numbers but keeps their space, so the tile never resizes. */
   waiting: number | null
-  /** Orders being made right now (drives the illustration only). */
+  /** Orders a worker is handling right now. */
   inService?: number
-  /** The same count before a change, shown as "was 5" beside the number. */
+  /** The same waiting count before a change, shown as "was 5" beside the number. */
   was?: number
   /** One short label for the beat that is about this station: "+1 cashier", "2 drinks a minute". */
   chip?: TileChip
-  /** People working here. Shown only where staffing is the point (the experiment). */
-  people?: number
+  /** Workers at this station. */
+  workers?: number
   dim?: boolean
   highlight?: boolean
   /** Opens the station's details. The whole tile becomes the button. */
@@ -33,6 +34,16 @@ const figures = {
   pickup: { mount: mountPickup, label: 'Pick up: a shelf of lidded cups' },
 } as const
 
+/**
+ * Every order is one customer and one coffee. What "waiting" means is different at each stop,
+ * so each stop says it in its own words.
+ */
+const WORDS: Record<StationId, { waiting: string; serving: string; idle: string }> = {
+  order: { waiting: 'Customers in line', serving: 'ordering now', idle: 'Register free' },
+  drinks: { waiting: 'Drinks to make', serving: 'being made', idle: 'Barista free' },
+  pickup: { waiting: 'Drinks to hand over', serving: 'being handed over', idle: 'Counter free' },
+}
+
 const pads: Record<StationId, string> = { order: 'bg-[#d5e6dc]', drinks: 'bg-[#f1e8d2]', pickup: 'bg-[#e1ebe6]' }
 const numerals: Record<StationId, string> = { order: 'text-forest', drinks: 'text-ember', pickup: 'text-[#4b6c5f]' }
 const chipTones: Record<TileChip['tone'], string> = {
@@ -42,19 +53,21 @@ const chipTones: Record<TileChip['tone'], string> = {
   neutral: 'bg-ink/[0.06] text-ink',
 }
 
-/** Waiting orders as a small stack of rings: twelve at most, then a "+n". */
+/** Waiting orders as rings: twelve at most, then a "+n". */
 const MAX_DOTS = 12
 
 /**
- * One station, reduced to what a visitor needs: its name, a picture, and how many orders are
- * waiting there. Everything else appears only on the beat that is about it, as one chip.
+ * One station, reduced to what a visitor needs: its name, a picture, how many orders wait here
+ * (in this stop's own words), who is being served right now, and how many workers there are.
+ * Anything else appears only on the beat that is about it, as one chip.
  *
- * The tile has a fixed shape at every step of the story and in the experiment, so nothing jumps.
- * Motion ownership: CSS only (opacity and transform transitions on the tile). GSAP never writes
- * to it; the Hairline figure animates inside its own svg.
+ * The tile has the same shape at every step of the story and in the experiment, so nothing jumps.
+ * Motion ownership: CSS only (background, translate and scale transitions on the tile). GSAP
+ * never writes to it; the Hairline figure animates inside its own svg.
  */
-function StationTileBase({ station, waiting, inService = 0, was, chip, people, dim = false, highlight = false, onOpen, className }: StationTileProps) {
+function StationTileBase({ station, waiting, inService = 0, was, chip, workers, dim = false, highlight = false, onOpen, className }: StationTileProps) {
   const figure = figures[station.id]
+  const words = WORDS[station.id]
   const queue = waiting ?? 0
   const figureState = useMemo(() => ({ queue, inService }), [queue, inService])
   const longer = was !== undefined && waiting !== null && waiting > was
@@ -83,36 +96,44 @@ function StationTileBase({ station, waiting, inService = 0, was, chip, people, d
       </header>
 
       {/* Inside a button the picture would only lengthen its name, so it is hidden there. */}
-      <div aria-hidden={onOpen ? true : undefined} className={cn('relative mx-4 mt-4 overflow-hidden rounded-[22px] transition-opacity duration-500', pads[station.id], dim && 'opacity-35')}>
-        <HairlineFigure mount={figure.mount} state={figureState} label={figure.label} className="relative z-[1] mx-auto w-full max-w-[300px] wide:max-w-[min(300px,24svh)]" />
+      <div
+        aria-hidden={onOpen ? true : undefined}
+        className={cn('relative mx-4 mt-4 overflow-hidden rounded-[22px] transition-opacity duration-500', pads[station.id], dim && 'opacity-35')}
+      >
+        <HairlineFigure mount={figure.mount} state={figureState} label={figure.label} className="relative z-[1] mx-auto w-full max-w-[280px] wide:max-w-[min(280px,22svh)]" />
         <span aria-hidden="true" className="absolute inset-x-[18%] bottom-[7%] h-[9%] bg-[radial-gradient(closest-side,rgb(27_38_34/0.18),transparent)]" />
       </div>
 
-      <div className={cn('flex min-h-[5.5rem] items-end justify-between gap-4 px-6 pb-5 pt-4', waiting === null && 'invisible')}>
-        <div className="flex flex-col gap-1">
-          <span className="text-sm font-medium text-ink-2">Waiting</span>
+      <div className={cn('flex flex-col gap-2.5 px-6 pb-5 pt-4', waiting === null && 'invisible')}>
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-sm font-semibold text-ink-2">{words.waiting}</span>
+          {workers !== undefined ? (
+            <span className="inline-flex items-center gap-1.5 text-sm font-semibold text-ink-2 tabular">
+              <UserRound aria-hidden="true" className="size-4" strokeWidth={2} />
+              {workers} {workers === 1 ? 'worker' : 'workers'}
+            </span>
+          ) : null}
+        </div>
+        <div className="flex min-h-[2.6rem] items-end justify-between gap-3">
           <span className="flex items-baseline gap-2.5">
-            <span className={cn('display text-[3rem] leading-[0.85] tabular', longer ? 'text-queue' : 'text-ink')}>{queue}</span>
+            <span className={cn('display text-[2.75rem] leading-[0.85] tabular', longer ? 'text-queue' : 'text-ink')}>{queue}</span>
             {was !== undefined ? (
               <span className="text-base font-semibold text-ink-2 tabular">
                 was <span className="line-through decoration-2">{was}</span>
               </span>
             ) : null}
           </span>
-        </div>
-        <div className="flex flex-col items-end gap-2">
-          {people !== undefined ? (
-            <span className="text-base font-semibold text-ink-2 tabular">
-              {people} {people === 1 ? 'person' : 'people'}
-            </span>
-          ) : null}
-          <span aria-hidden="true" className="flex max-w-[8.5rem] flex-wrap justify-end gap-1.5">
+          <span aria-hidden="true" className="flex max-w-[8.5rem] flex-wrap justify-end gap-1.5 pb-1">
             {Array.from({ length: shown }, (_, i) => (
               <span key={i} className="size-3 rounded-full border-2 border-queue bg-queue-tint" />
             ))}
             {queue > MAX_DOTS ? <span className="text-xs font-semibold text-queue">+{queue - MAX_DOTS}</span> : null}
           </span>
         </div>
+        <p className="flex items-center gap-2 border-t border-line pt-2.5 text-sm text-ink-2 tabular">
+          <span aria-hidden="true" className={cn('size-3 shrink-0 rounded-full', inService > 0 ? 'bg-forest' : 'border-2 border-line')} />
+          {inService > 0 ? `${inService} ${words.serving}` : words.idle}
+        </p>
       </div>
     </>
   )
@@ -129,11 +150,7 @@ function StationTileBase({ station, waiting, inService = 0, was, chip, people, d
 
   if (onOpen) {
     return (
-      <button
-        type="button"
-        onClick={onOpen}
-        className={cn(surface, 'press outline-none focus-visible:ring-3 focus-visible:ring-ring/50 [@media(hover:hover)]:hover:-translate-y-1')}
-      >
+      <button type="button" onClick={onOpen} className={cn(surface, 'press outline-none focus-visible:ring-3 focus-visible:ring-ring/50 [@media(hover:hover)]:hover:-translate-y-1')}>
         {body}
         <span className="sr-only">Open details</span>
       </button>

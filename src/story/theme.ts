@@ -57,7 +57,7 @@ const FOREST: RoomTheme = {
 }
 
 /** One theme per beat, in story order. */
-export const BEAT_THEMES: readonly RoomTheme[] = [STONE, MIST, STONE, SAGE, SAND, FOREST, MIST]
+export const BEAT_THEMES: readonly RoomTheme[] = [STONE, MIST, STONE, SAGE, SAND, FOREST, STONE, MIST]
 
 /** The rush starts calm and ends under pressure: its background warms from stone to sand with the clock. */
 export const RUSH_FROM = STONE

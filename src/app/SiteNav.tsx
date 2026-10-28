@@ -6,7 +6,7 @@
 export function SiteNav() {
   return (
     <nav aria-label="Page" className="glass fixed left-1/2 top-4 z-40 flex -translate-x-1/2 items-center gap-1 rounded-full p-1.5 pl-5 text-sm font-semibold text-ink">
-      <a href="#top" className="display press flex min-h-10 items-center whitespace-nowrap pr-3 text-base outline-none focus-visible:underline">
+      <a href="#top" className="display press -ml-2 flex min-h-10 items-center whitespace-nowrap rounded-full pl-2 pr-3 text-base outline-none focus-visible:ring-3 focus-visible:ring-ring/50">
         Where the waiting goes
       </a>
       <a

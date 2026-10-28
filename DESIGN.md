@@ -103,3 +103,11 @@ Supersedes earlier passes where they differ. Details and reasons: `docs/redesign
 - **Track:** a hairline with three stop ticks under the tiles and a forest order dot; or a 6px rush bar in the queue colour. Caption in a glass pill under it.
 - **Glass material** (`.glass` in `globals.css`, components layer so utilities win): white 50% to 26% vertical veil, blur 18px with saturation 170%, inset top highlight, soft shadow, and a 1px gradient rim (bright at the top left, fading along the sides). Only on floating chrome. `.glass-dark` for glass on the forest hero.
 - **Motion tokens:** `--ease-out` (0.23, 1, 0.32, 1), `--ease-in-out`, `--ease-drawer`. Press feedback `press` utility: scale 0.97 on `:active`. UI transitions are CSS transitions (interruptible); GSAP owns scroll-driven motion only.
+
+## Review round, 2026-10-28
+
+- **Tile wording:** waiting is named per stop ("Customers in line", "Drinks to make", "Drinks to hand over"); a ruled line under it says who is being served ("1 being made", or "Barista free") with a solid forest dot; workers show as a person icon and "1 worker". Rings are waiting orders, solid dots are orders being served. Hairline figures are 280px max (22svh on wide screens).
+- **Stage geometry:** fixed for the whole pinned story (below the tallest text group; track always 80px), so tile size never changes between chapters. Chapter text is two columns on wide screens: headline (1.1fr) and description (1fr), bottom-aligned.
+- **Copy emphasis:** key words in bold (weight only, same colour).
+- **Hero motion:** inset card (4.5vw by 6vh, 48px radius); 220svh scroll budget; clip-path power3.inOut; scene push-in 1.16; depth layers -260, -170, -100, -50 px; pointer parallax 14 by 10 px (words) and 26 by 18 px (picture); entrance 1.25 s power4.out with 80 ms stagger.
+- **Caption pill:** glass with a denser white veil (75%) so its text keeps contrast on every room.

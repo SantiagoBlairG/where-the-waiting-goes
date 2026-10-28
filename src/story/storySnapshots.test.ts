@@ -1,5 +1,5 @@
 import { expect, it } from 'vitest'
-import { beats } from './storyBeats'
+import { beats, plain } from './storyBeats'
 import { baselineAtClose, baselineMidRush, cashierAtClose, startOfRush } from './storySnapshots'
 
 const queues = (s: typeof baselineAtClose) => s.stations.map((st) => st.queue)
@@ -22,9 +22,11 @@ it('story snapshots match the figures quoted in the beat copy', () => {
 })
 
 it('keeps the copy honest about those numbers', () => {
-  const text = Object.fromEntries(beats.map((b) => [b.id, `${b.support ?? ''} ${b.stageDescription}`]))
-  expect(text.rush).toContain('3 orders wait at Order and pay')
-  expect(text.surprise).toContain('9 orders are now waiting for coffee, up from 5')
+  const text = Object.fromEntries(beats.map((b) => [b.id, plain(`${b.support ?? ''} ${b.stageDescription}`)]))
+  expect(text.rush).toContain('30 customers in ten minutes: one every 20 seconds')
+  expect(text.rush).toContain('18 coffees are handed over and 12 customers are still waiting')
+  expect(text.surprise).toContain('9 drinks now wait at the barista, up from 5')
   expect(text.surprise).toContain('18')
-  expect(text.reveal).toContain('9 orders waiting')
+  expect(text.reveal).toContain('9 drinks waiting')
+  expect(text.pickup).toContain('4 a minute, more than the 3 customers who arrive')
 })

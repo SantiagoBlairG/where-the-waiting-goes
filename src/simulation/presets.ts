@@ -3,7 +3,7 @@ import { runToCompletion } from './engine'
 import { completedBy, lastPickupSeconds, meanQueueWaitSeconds, meanTotalSeconds } from './metrics'
 import type { ExtraPlacement, SimulationConfig } from './types'
 
-export type PresetId = 'original' | 'cashier' | 'barista'
+export type PresetId = 'original' | 'cashier' | 'barista' | 'runner'
 
 export type Preset = {
   id: PresetId
@@ -31,6 +31,8 @@ export const PRESETS: readonly Preset[] = Object.freeze([
   preset('original', 'Original team', 'off'),
   preset('cashier', 'Extra cashier', 'order'),
   preset('barista', 'Extra barista', 'drinks'),
+  // Not one of the plan's three fixtures: the visitor's fourth choice, the extra worker at pickup.
+  preset('runner', 'Extra at pickup', 'pickup'),
 ])
 
 export type FullRunResult = {

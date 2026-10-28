@@ -37,21 +37,26 @@ export const StoryStage = memo(function StoryStage({ frame, tracePosition, phone
               chip={t.chip}
               dim={t.dim}
               highlight={t.highlight}
+              workers={t.workers}
             />
           </div>
         ))}
       </div>
-      {frame.track ? <Track track={frame.track} position={tracePosition} /> : <div aria-hidden="true" className="h-[4.5rem]" />}
+      {frame.track ? <Track track={frame.track} position={tracePosition} /> : <div aria-hidden="true" className="hidden wide:block wide:h-20" />}
     </div>
   )
 })
 
+/* The caption pill carries a denser veil than other glass (bg-white/75): it sits on every room,
+   including the deep forest one, and its small text must keep 4.5:1 there. */
 function Track({ track, position }: { track: TrackFrame; position?: number }) {
   const clock = track.kind === 'clock'
   const fill = clock ? Math.min(1, track.seconds / ADMISSION_WINDOW_SECONDS) : 0
   return (
-    <div className="flex flex-col items-center gap-3" data-track={track.kind}>
-      <div aria-hidden="true" className={cn('relative h-6 w-full', track.kind === 'caption' && 'hidden')}>
+    // On wide screens the track always takes the same height, whatever it holds, so the stage above
+    // it never changes size between beats.
+    <div className="flex flex-col items-center gap-3 wide:h-20" data-track={track.kind}>
+      <div aria-hidden="true" className={cn('relative h-6 w-full', track.kind === 'caption' && 'invisible max-wide:hidden')}>
         {track.kind === 'trace' ? (
           <>
             <span className="absolute inset-x-[16.667%] top-1/2 h-0.5 -translate-y-1/2 rounded-full bg-current/20" />
@@ -81,7 +86,7 @@ function Track({ track, position }: { track: TrackFrame; position?: number }) {
           </>
         ) : null}
       </div>
-      <p className="glass flex min-h-11 items-center gap-3 rounded-full px-5 py-2 text-center text-[0.95rem] font-medium text-ink">
+      <p className="glass flex min-h-11 items-center gap-3 rounded-full bg-white/75 px-5 py-2 text-center text-[0.95rem] font-medium text-ink wide:whitespace-nowrap">
         {clock ? (
           <span className="display text-lg tabular" data-clock>
             {clockText(track.seconds)}
