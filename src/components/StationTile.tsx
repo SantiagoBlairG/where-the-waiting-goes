@@ -83,8 +83,8 @@ function StationTileBase({ station, waiting, inService = 0, was, chip, workers, 
 
   const body = (
     <>
-      <header className="flex min-h-11 items-center justify-between gap-2 px-5 pt-5 xl:gap-3 xl:px-6">
-        <h3 className="flex items-baseline gap-2.5 whitespace-nowrap font-display text-[1.3rem] font-semibold leading-none">
+      <header className="flex min-h-11 items-center justify-between gap-2 px-5 pt-5 max-wide:flex-wrap xl:gap-3 xl:px-6">
+        <h3 className="flex items-baseline gap-2.5 font-display wide:whitespace-nowrap text-[1.3rem] font-semibold leading-none">
           <span aria-hidden="true" className={cn('display text-[2.3rem] leading-[0.8]', numerals[station.id])}>
             {station.step}
           </span>
@@ -119,7 +119,7 @@ function StationTileBase({ station, waiting, inService = 0, was, chip, workers, 
       {about ? (
         <div className="flex flex-col gap-2.5 px-5 pb-5 pt-4 xl:px-6">
           {/* Row heights match the counts footer exactly, so the tile keeps its size between chapters. */}
-          <div className="flex min-h-7 items-center justify-between gap-2 whitespace-nowrap">
+          <div className="flex min-h-7 items-center justify-between gap-2 wide:whitespace-nowrap">
             <span className={cn('rounded-full px-2.5 py-1 text-[0.8rem] font-semibold tabular', highlight ? 'bg-forest text-paper' : 'bg-ink/[0.07] text-ink')}>
               about {station.serviceSeconds} s each
             </span>
@@ -143,8 +143,8 @@ function StationTileBase({ station, waiting, inService = 0, was, chip, workers, 
         </div>
       ) : (
         <div className={cn('flex flex-col gap-2.5 px-5 pb-5 pt-4 xl:px-6', waiting === null && 'invisible')}>
-          <div className="flex min-h-7 items-center justify-between gap-2 whitespace-nowrap">
-            <span className="min-w-0 truncate text-[0.8rem] font-semibold text-ink-2 xl:text-sm">{words.waiting}</span>
+          <div className="flex min-h-7 items-center justify-between gap-2 wide:whitespace-nowrap">
+            <span className="min-w-0 text-[0.8rem] wide:truncate font-semibold text-ink-2 xl:text-sm">{words.waiting}</span>
             {workers !== undefined ? (
               <span key={workers} className={cn('inline-flex shrink-0 items-center gap-1.5 text-[0.8rem] font-semibold tabular xl:text-sm', workers > 1 ? 'text-[#2a4a40]' : 'text-ink-2', FADE)}>
                 <UserRound aria-hidden="true" className="size-4" strokeWidth={2} />

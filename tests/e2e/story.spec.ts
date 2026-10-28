@@ -128,6 +128,24 @@ test.describe('welcome and pinned story on a wide screen', () => {
     expect(errors, errors.join('\n')).toEqual([])
   })
 
+  test('the floating nav changes with the page: See story, then just the title, then Back to top', async ({ page }) => {
+    await page.goto('/')
+    const nav = page.getByRole('navigation', { name: 'Page' })
+    // Welcome: the call to action takes you to the first chapter.
+    await nav.getByRole('button', { name: 'See story' }).click()
+    await settle(page, 0)
+    // In the story the nav is just the title (hidden buttons leave the accessibility tree too).
+    await expect(nav.getByRole('button')).toHaveCount(0)
+    await expect(nav.getByRole('link', { name: 'Where the waiting goes' })).toBeVisible()
+    // In the experiment it offers a quieter way back to the welcome card.
+    await page.evaluate(() => document.getElementById('experiment')!.scrollIntoView())
+    const back = nav.getByRole('button', { name: 'Back to top' })
+    await expect(back).toBeVisible()
+    await back.click()
+    await expect.poll(() => page.evaluate(() => window.scrollY), { timeout: 5000 }).toBe(0)
+    await expect(nav.getByRole('button', { name: 'See story' })).toBeVisible()
+  })
+
   test('a short wheel scroll settles on the next resting point (the magnet), and the rush scrolls freely', async ({ page }) => {
     await page.goto('/')
     await goTo(page, 3, 0.5)
